@@ -4,10 +4,10 @@ import {
   AlertTriangle, BookOpen, Camera, Check, ChevronDown, Clock3, Flag, HeartHandshake, Info, LockKeyhole,
   Mail, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UserRoundPen, X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { currentUser as demoCurrentUser, lobbyComments as demoLobbyComments, lobbyPosts as demoLobbyPosts, majors } from "@/lib/mock-data";
 import type { DirectConversation, DirectMessage, LobbyComment, LobbyContactLink, LobbyPost, LobbyPostKind, Profile } from "@/lib/types";
-import { createClient, ensureAnonymousSession, isSupabaseConfigured } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   addLobbyComment, deleteLobbyComment, deleteLobbyPost, getMyProfile, listLobbyComments,
   listDirectConversations, listDirectMessages, listLobbyContactLinks, listLobbyPosts,
@@ -34,9 +34,17 @@ function AdminBadge() {
   return <span className="admin-badge"><ShieldCheck className="size-3" />管理员</span>;
 }
 
+function maskEmail(email: string) {
+  const [name, domain] = email.split("@");
+  if (!name || !domain) return "邮箱已绑定";
+  return `${name.slice(0, Math.min(2, name.length))}${name.length > 2 ? "***" : "*"}@${domain}`;
+}
+
 export function PlatformApp() {
-  const [me, setMe] = useState<Profile>({ ...demoCurrentUser, building: "undecided" });
-  const [posts, setPosts] = useState<LobbyPost[]>(demoLobbyPosts);
+  const configured = isSupabaseConfigured();
+  const emptyProfile: Profile = { ...demoCurrentUser, nickname: "", realName: "", contact: { type: "微信", value: "" }, building: "undecided" };
+  const [me, setMe] = useState<Profile>(configured ? emptyProfile : { ...demoCurrentUser, building: "undecided" });
+  const [posts, setPosts] = useState<LobbyPost[]>(configured ? [] : demoLobbyPosts);
   const [links, setLinks] = useState<LobbyContactLink[]>([]);
   const [selectedPost, setSelectedPost] = useState<LobbyPost | null>(null);
   const [comments, setComments] = useState<LobbyComment[]>([]);
@@ -47,6 +55,9 @@ export function PlatformApp() {
   const [activeConversation, setActiveConversation] = useState<DirectConversation | null>(null);
   const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
   const [showInbox, setShowInbox] = useState(false);
+  const [showEmailAuth, setShowEmailAuth] = useState(false);
+  const [emailAuthMode, setEmailAuthMode] = useState<"signin" | "link">("signin");
+  const [accountEmail, setAccountEmail] = useState("");
   const [sessionUserId, setSessionUserId] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -55,7 +66,8 @@ export function PlatformApp() {
   const [loading, setLoading] = useState(isSupabaseConfigured());
   const [connectionError, setConnectionError] = useState("");
   const [toast, setToast] = useState("");
-  const supabase = useMemo(() => isSupabaseConfigured() ? createClient() : null, []);
+  const sessionUserIdRef = useRef("");
+  const supabase = useMemo(() => configured ? createClient() : null, [configured]);
 
   const notify = (message: string) => {
     setToast(message);
@@ -91,18 +103,20 @@ export function PlatformApp() {
   useEffect(() => {
     if (!supabase) return;
     let active = true;
-    let userId = "";
     const refreshPosts = async () => {
+      const userId = sessionUserIdRef.current;
       if (!userId) return;
       const next = await listLobbyPosts(supabase, userId);
       if (active) setPosts(next);
     };
     const refreshLinks = async () => {
+      const userId = sessionUserIdRef.current;
       if (!userId) return;
       const next = await listLobbyContactLinks(supabase);
       if (active) setLinks(next);
     };
     const refreshConversations = async () => {
+      const userId = sessionUserIdRef.current;
       if (!userId) return;
       const next = await listDirectConversations(supabase);
       if (active) setConversations(next);
@@ -114,16 +128,35 @@ export function PlatformApp() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages" }, (payload) => {
         void refreshConversations();
         const senderId = (payload.new as { sender_id?: string }).sender_id;
+        const userId = sessionUserIdRef.current;
         if (senderId && userId && senderId !== userId) notify("信箱里收到一条新私信");
       })
       .subscribe();
     (async () => {
       try {
-        const session = await ensureAnonymousSession();
-        if (!session) throw new Error("暂时没能建立浏览器账户");
-        userId = session.user.id;
-        if (active) setSessionUserId(userId);
-        if (active) await refresh(userId);
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        const session = data.session;
+        if (!session) {
+          if (active) {
+            setEmailAuthMode("signin");
+            setShowEmailAuth(true);
+          }
+          return;
+        }
+        sessionUserIdRef.current = session.user.id;
+        if (active) {
+          setSessionUserId(session.user.id);
+          setAccountEmail(session.user.email || "");
+        }
+        if (session.user.is_anonymous) {
+          if (active) {
+            setEmailAuthMode("link");
+            setShowEmailAuth(true);
+          }
+          return;
+        }
+        if (active) await refresh(session.user.id);
       } catch (error) {
         if (active) setConnectionError(error instanceof Error ? error.message : "暂时没能连接到线上资料");
       } finally {
@@ -133,6 +166,57 @@ export function PlatformApp() {
     return () => { active = false; void supabase.removeChannel(channel); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
+
+  const requestEmailCode = async (email: string, mode: "signin" | "link") => {
+    if (!supabase) throw new Error("邮箱登录尚未配置");
+    if (mode === "link") {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session?.user.is_anonymous) throw new Error("当前账号已经绑定邮箱，请直接登录");
+      const { error } = await supabase.auth.updateUser({ email });
+      if (error) throw error;
+      return "email_change" as const;
+    }
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    if (error) throw error;
+    return "email" as const;
+  };
+
+  const verifyEmailCode = async (email: string, token: string, type: "email" | "email_change") => {
+    if (!supabase) throw new Error("邮箱登录尚未配置");
+    const { data, error } = await supabase.auth.verifyOtp({ email, token, type });
+    if (error) throw error;
+    const session = data.session || (await supabase.auth.getSession()).data.session;
+    if (!session || session.user.is_anonymous) throw new Error("邮箱还没有完成绑定，请重新获取验证码");
+    sessionUserIdRef.current = session.user.id;
+    setSessionUserId(session.user.id);
+    setAccountEmail(session.user.email || email);
+    setShowEmailAuth(false);
+    setLoading(true);
+    try {
+      await refresh(session.user.id);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signOut = async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    sessionUserIdRef.current = "";
+    setSessionUserId("");
+    setAccountEmail("");
+    setMe(emptyProfile);
+    setPosts([]);
+    setLinks([]);
+    setConversations([]);
+    setShowInbox(false);
+    setShowProfile(false);
+    setEmailAuthMode("signin");
+    setShowEmailAuth(true);
+  };
 
   useEffect(() => {
     if (!supabase || !selectedPost || !sessionUserId) return;
@@ -315,7 +399,7 @@ export function PlatformApp() {
       <div className="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
         <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-2xl bg-sky-900 text-xl text-white">伴</span><span><strong className="block leading-4 text-sky-950">线上组队</strong><small className="text-[10px] tracking-widest text-slate-400">UNNC 新生公共聊天区</small></span></div>
         <span className="ml-5 hidden items-center gap-1.5 text-xs font-semibold text-emerald-700 sm:inline-flex"><span className="size-2 rounded-full bg-emerald-500" />实时更新</span>
-        <div className="ml-auto flex items-center gap-2"><button onClick={() => setShowDisclaimer(true)} className="icon-button" aria-label="说明与免责"><Info className="size-5" /></button><button onClick={() => setShowInbox(true)} className="icon-button relative" aria-label="打开私信信箱"><Mail className="size-5" />{unreadMessages > 0 && <span className="inbox-count">{unreadMessages > 99 ? "99+" : unreadMessages}</span>}</button><button onClick={() => setShowProfile(true)} className="flex items-center gap-2 rounded-full bg-slate-50 py-1.5 pl-2 pr-3 text-sm font-semibold"><Avatar profile={me} size="sm" /><span className="hidden sm:inline">{me.nickname || "填写资料"}</span>{me.isAdmin && <AdminBadge />}</button></div>
+        <div className="ml-auto flex items-center gap-2"><button onClick={() => setShowDisclaimer(true)} className="icon-button" aria-label="说明与免责"><Info className="size-5" /></button><button onClick={() => setShowInbox(true)} disabled={!sessionUserId || showEmailAuth} className="icon-button relative disabled:opacity-40" aria-label="打开私信信箱"><Mail className="size-5" />{unreadMessages > 0 && <span className="inbox-count">{unreadMessages > 99 ? "99+" : unreadMessages}</span>}</button><button onClick={() => { if (!showEmailAuth) setShowProfile(true); }} className="flex items-center gap-2 rounded-full bg-slate-50 py-1.5 pl-2 pr-3 text-sm font-semibold"><Avatar profile={me} size="sm" /><span className="hidden sm:inline">{loading || showEmailAuth ? "正在识别账号" : me.nickname || "填写资料"}</span>{me.isAdmin && <AdminBadge />}</button></div>
       </div>
     </header>
 
@@ -333,17 +417,18 @@ export function PlatformApp() {
     {connectionError && <div className="border-b border-rose-200 bg-rose-50 px-4 py-3 text-center text-xs text-rose-800">线上内容暂时没有加载出来：{connectionError}</div>}
 
     <main className="mx-auto max-w-6xl px-3 py-4 sm:px-6 sm:py-6">
-      {loading ? <div className="card grid min-h-72 place-items-center p-8 text-sm text-slate-500">正在进入公共聊天区…</div> : <LobbyPage
-        me={me} posts={posts} links={links} expandedPostId={selectedPost?.id} comments={comments} onPublish={publish} onComments={openComments} onSaveComment={addComment} onDeleteComment={removeComment}
+      {loading || showEmailAuth ? <div className="card grid min-h-72 place-items-center p-8 text-sm text-slate-500">{showEmailAuth ? "完成邮箱验证后进入公共聊天区" : "正在识别账号…"}</div> : <LobbyPage
+        me={me} posts={posts} links={links} accountEmail={accountEmail} expandedPostId={selectedPost?.id} comments={comments} onPublish={publish} onComments={openComments} onSaveComment={addComment} onDeleteComment={removeComment}
         onDelete={removePost} onReport={async (id) => { if (supabase) await reportLobbyPost(supabase, id, "请管理员查看这条公共聊天内容"); notify("反馈已经收到"); }}
-        onContact={requestContact} onOwnRequests={setContactPost} onOpenProfile={setProfilePost} onProfile={() => setShowProfile(true)}
+        onContact={requestContact} onOwnRequests={setContactPost} onOpenProfile={setProfilePost} onProfile={() => setShowProfile(true)} onSignOut={signOut}
       />}
     </main>
 
     <footer className="border-t border-slate-200 bg-white px-4 py-6 text-xs text-slate-500"><div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p>在校生个人制作的第三方网站 · 有问题请联系 scymg5@nottingham.edu.cn</p><button onClick={() => setShowDisclaimer(true)} className="text-left font-semibold text-sky-800">使用说明与免责声明</button></div></footer>
 
-    {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
-    {showProfile && !showWelcome && <ProfileModal profile={me} required={needsProfile} onClose={() => { if (!needsProfile) setShowProfile(false); }} onSave={saveMyProfile} onUploadAvatar={uploadAvatar} />}
+    {showEmailAuth && <EmailAuthModal mode={emailAuthMode} onRequestCode={requestEmailCode} onVerifyCode={verifyEmailCode} />}
+    {showWelcome && !showEmailAuth && <WelcomeModal onClose={() => setShowWelcome(false)} />}
+    {showProfile && !showWelcome && !showEmailAuth && <ProfileModal profile={me} required={needsProfile} onClose={() => { if (!needsProfile) setShowProfile(false); }} onSave={saveMyProfile} onUploadAvatar={uploadAvatar} />}
     {profilePost && <PublicProfileModal
       post={profilePost}
       link={links.find((link) => link.postId === profilePost.id && link.role === "requester")}
@@ -363,12 +448,12 @@ export function PlatformApp() {
   </div>;
 }
 
-function LobbyPage({ me, posts, links, expandedPostId, comments, onPublish, onComments, onSaveComment, onDeleteComment, onDelete, onReport, onContact, onOwnRequests, onOpenProfile, onProfile }: {
-  me: Profile; posts: LobbyPost[]; links: LobbyContactLink[]; expandedPostId?: string; comments: LobbyComment[];
+function LobbyPage({ me, posts, links, accountEmail, expandedPostId, comments, onPublish, onComments, onSaveComment, onDeleteComment, onDelete, onReport, onContact, onOwnRequests, onOpenProfile, onProfile, onSignOut }: {
+  me: Profile; posts: LobbyPost[]; links: LobbyContactLink[]; accountEmail: string; expandedPostId?: string; comments: LobbyComment[];
   onPublish: (kind: LobbyPostKind, body: string) => Promise<void>; onComments: (post: LobbyPost) => void;
   onSaveComment: (postId: string, body: string) => Promise<void>; onDeleteComment: (id: string) => void;
   onDelete: (id: string) => void; onReport: (id: string) => void; onContact: (post: LobbyPost) => void;
-  onOwnRequests: (post: LobbyPost) => void; onOpenProfile: (post: LobbyPost) => void; onProfile: () => void;
+  onOwnRequests: (post: LobbyPost) => void; onOpenProfile: (post: LobbyPost) => void; onProfile: () => void; onSignOut: () => Promise<void>;
 }) {
   const [kind, setKind] = useState<LobbyPostKind>("chat");
   const [filter, setFilter] = useState<"all" | LobbyPostKind>("all");
@@ -407,6 +492,7 @@ function LobbyPage({ me, posts, links, expandedPostId, comments, onPublish, onCo
         <div className="flex items-center gap-3"><Avatar profile={me} /><div className="min-w-0"><b className="block truncate">{me.nickname}</b><p className="text-xs text-slate-500">通常 {me.weekdaySleep} 休息 · {me.smoking}</p></div></div>
         <div className="mt-3 flex flex-wrap gap-2">{me.interests.slice(0, 4).map((item) => <Badge key={item} tone="gray">{item}</Badge>)}</div>
         <button onClick={onProfile} className="button button-secondary mt-4 w-full"><UserRoundPen className="size-4" />编辑个人资料</button>
+        <div className="mt-4 border-t border-slate-100 pt-4"><p className="text-[11px] text-slate-400">登录邮箱仅自己可见</p><p className="mt-1 truncate text-xs font-semibold text-slate-600">{maskEmail(accountEmail)}</p><button type="button" onClick={() => void onSignOut()} className="mt-3 text-xs font-semibold text-sky-800">退出 / 切换账号</button></div>
       </div>
       <div className="card warm-guide p-5">
         <div className="flex items-center gap-2"><BookOpen className="size-4 text-amber-700" /><h2 className="font-bold">简单实用教程</h2></div>
@@ -453,6 +539,70 @@ function PostItem({ post, links, expanded, comments, onComments, onSaveComment, 
       {expanded && <InlineComments post={post} comments={comments} onSave={onSaveComment} onDelete={onDeleteComment} />}
     </div>
   </article>;
+}
+
+function EmailAuthModal({ mode, onRequestCode, onVerifyCode }: {
+  mode: "signin" | "link";
+  onRequestCode: (email: string, mode: "signin" | "link") => Promise<"email" | "email_change">;
+  onVerifyCode: (email: string, token: string, type: "email" | "email_change") => Promise<void>;
+}) {
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [verificationType, setVerificationType] = useState<"email" | "email_change">("email");
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const requestCode = async () => {
+    const normalized = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      setError("请填写可以正常收信的邮箱地址");
+      return;
+    }
+    setBusy(true); setError("");
+    try {
+      const type = await onRequestCode(normalized, mode);
+      setEmail(normalized);
+      setVerificationType(type);
+      setStep("code");
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "验证码暂时没有发送成功";
+      setError(message.includes("rate") ? "验证码请求有些频繁，请稍后再试" : message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const verify = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (code.length < 6) { setError("请输入邮件中的完整验证码"); return; }
+    setBusy(true); setError("");
+    try {
+      await onVerifyCode(email, code, verificationType);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "验证码暂时没有通过";
+      setError(message.toLowerCase().includes("expired") || message.toLowerCase().includes("invalid") ? "验证码不正确或已经失效，请重新获取" : message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return <Modal onClose={() => {}} wide>
+    <div className="email-auth-panel">
+      <div className="welcome-mark"><Mail className="size-6" /></div>
+      <p className="mt-5 text-xs font-bold tracking-[.18em] text-amber-700">个人邮箱和学校邮箱都支持</p>
+      <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">{mode === "link" ? "绑定邮箱，保留当前账号" : "邮箱验证码登录"}</h2>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{mode === "link" ? "验证后会保留当前的个人资料、消息和管理员身份，以后换设备也能回到同一个账号。" : "无需设置密码。输入邮箱与邮件验证码，就能进入自己的账号。"}</p>
+      {step === "email" ? <div className="mt-6">
+        <label className="field"><span>登录邮箱（仅自己可见）</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value.slice(0, 160))} placeholder="name@example.com" onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void requestCode(); } }} /></label>
+        <button type="button" onClick={() => void requestCode()} disabled={busy} className="button button-primary mt-4 w-full"><Mail className="size-4" />{busy ? "正在发送…" : "发送邮箱验证码"}</button>
+      </div> : <form className="mt-6" onSubmit={verify}>
+        <div className="rounded-2xl bg-sky-50 p-4 text-sm text-sky-900"><p>验证码已发送至</p><b className="mt-1 block break-all">{maskEmail(email)}</b></div>
+        <label className="field mt-4"><span>邮件验证码</span><input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="请输入验证码" /></label>
+        <button disabled={busy || code.length < 6} className="button button-primary mt-4 w-full"><Check className="size-4" />{busy ? "正在验证…" : mode === "link" ? "验证并保留当前账号" : "验证并登录"}</button>
+        <div className="mt-4 flex items-center justify-between text-xs"><button type="button" onClick={() => { setStep("email"); setCode(""); setError(""); }} className="font-semibold text-sky-800">更换邮箱</button><button type="button" disabled={busy} onClick={() => void requestCode()} className="font-semibold text-sky-800 disabled:opacity-40">重新发送</button></div>
+      </form>}
+      {error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700">{error}</p>}
+      <div className="mt-5 flex items-start gap-2 rounded-2xl bg-white/75 p-4 text-xs leading-5 text-slate-500"><LockKeyhole className="mt-0.5 size-4 shrink-0 text-sky-700" /><p>邮箱只用于登录和找回账号，不会出现在个人主页、聊天区或公开仓库中。</p></div>
+    </div>
+  </Modal>;
 }
 
 function WelcomeModal({ onClose }: { onClose: () => void }) {
