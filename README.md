@@ -41,14 +41,17 @@ pnpm dev
 
 密钥、真实联系方式和用户数据不得提交到 GitHub。
 
-## 部署到 Vercel
+## 部署到 GitHub Pages
 
-1. 将仓库导入 Vercel。
-2. 在 Vercel 项目设置中添加 `.env.example` 列出的环境变量。
-3. 部署后，把正式域名加入 Supabase Auth 的允许跳转地址。
-4. 上线前测试举报、联系方式权限和账号迁移流程。
+1. 在仓库 `Settings → Secrets and variables → Actions` 中添加：
+   - Secret `NEXT_PUBLIC_SUPABASE_URL`
+   - Secret `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+2. 可选：在 `Variables` 中添加 `NEXT_PUBLIC_DORM_SELECTION_DATE`。
+3. 在 `Settings → Pages` 中将 Source 设为 `GitHub Actions`。
+4. 打开 `Actions → Deploy GitHub Pages` 并运行工作流。
+5. 部署后测试资料、联系方式权限和组队流程。
 
-Vercel Hobby 只适用于个人、非商业用途；免费额度耗尽后项目可能暂停。
+部署地址为 `https://xionger0w0.github.io/online-team-up/`。Supabase 的 URL 和 anon key 会在前端使用，但仍应通过 GitHub Secrets 管理；数据访问安全由 RLS 策略保证。
 
 ## 需求与数据模型
 
