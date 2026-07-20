@@ -47,3 +47,24 @@ export interface Team {
   open: boolean;
 }
 
+export type LobbyPostKind = "chat" | "recruitment";
+
+export interface LobbyPost {
+  id: string;
+  kind: LobbyPostKind;
+  body: string;
+  teamId?: string;
+  createdAt: string;
+  commentCount: number;
+  isMine: boolean;
+  author: Pick<Profile, "id" | "nickname" | "avatar" | "building" | "gender" | "major">;
+}
+
+export interface LobbyComment {
+  id: string;
+  postId: string;
+  body: string;
+  createdAt: string;
+  isMine: boolean;
+  author: Pick<Profile, "id" | "nickname" | "avatar" | "building" | "gender" | "major">;
+}

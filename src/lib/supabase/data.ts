@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Building, Gender, Orientation, Profile, SleepSlot, Team, WakeSlot } from "@/lib/types";
+import type { Building, Gender, LobbyComment, LobbyPost, LobbyPostKind, Orientation, Profile, SleepSlot, Team, WakeSlot } from "@/lib/types";
 
 type ContactType = "微信" | "QQ";
 
@@ -212,4 +212,99 @@ export async function listNotifications(client: SupabaseClient, userId: string) 
     .limit(20);
   if (error) throw error;
   return data || [];
+}
+
+interface LobbyAuthorRow {
+  author_id: string;
+  author_nickname: string;
+  author_avatar: string | null;
+  author_building: Building;
+  author_gender: Gender;
+  author_major: string;
+}
+
+interface LobbyPostRow extends LobbyAuthorRow {
+  id: string;
+  kind: LobbyPostKind;
+  body: string;
+  team_id: string | null;
+  created_at: string;
+  comment_count: number;
+}
+
+interface LobbyCommentRow extends LobbyAuthorRow {
+  id: string;
+  post_id: string;
+  body: string;
+  created_at: string;
+}
+
+function mapLobbyAuthor(row: LobbyAuthorRow): LobbyPost["author"] {
+  return {
+    id: row.author_id,
+    nickname: row.author_nickname,
+    avatar: row.author_avatar || (row.author_gender === "female" ? "🌿" : "🌊"),
+    building: row.author_building,
+    gender: row.author_gender,
+    major: row.author_major,
+  };
+}
+
+export async function listLobbyPosts(client: SupabaseClient, ownUserId: string): Promise<LobbyPost[]> {
+  const { data, error } = await client.rpc("list_lobby_posts", { post_limit: 100 });
+  if (error) throw error;
+  return ((data || []) as LobbyPostRow[]).map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    body: row.body,
+    teamId: row.team_id || undefined,
+    createdAt: row.created_at,
+    commentCount: Number(row.comment_count),
+    isMine: row.author_id === ownUserId,
+    author: mapLobbyAuthor(row),
+  }));
+}
+
+export async function publishLobbyPost(client: SupabaseClient, kind: LobbyPostKind, body: string, teamId?: string) {
+  const { data, error } = await client.rpc("publish_lobby_post", {
+    post_kind: kind,
+    message_body: body.trim(),
+    target_team: teamId || null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function deleteLobbyPost(client: SupabaseClient, postId: string) {
+  const { error } = await client.from("lobby_posts").delete().eq("id", postId);
+  if (error) throw error;
+}
+
+export async function listLobbyComments(client: SupabaseClient, postId: string, ownUserId: string): Promise<LobbyComment[]> {
+  const { data, error } = await client.rpc("list_lobby_comments", { target_post: postId });
+  if (error) throw error;
+  return ((data || []) as LobbyCommentRow[]).map((row) => ({
+    id: row.id,
+    postId: row.post_id,
+    body: row.body,
+    createdAt: row.created_at,
+    isMine: row.author_id === ownUserId,
+    author: mapLobbyAuthor(row),
+  }));
+}
+
+export async function addLobbyComment(client: SupabaseClient, postId: string, body: string) {
+  const { data, error } = await client.rpc("add_lobby_comment", { target_post: postId, message_body: body.trim() });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function deleteLobbyComment(client: SupabaseClient, commentId: string) {
+  const { error } = await client.from("lobby_comments").delete().eq("id", commentId);
+  if (error) throw error;
+}
+
+export async function reportLobbyPost(client: SupabaseClient, postId: string, reason: string) {
+  const { error } = await client.rpc("report_lobby_post", { target_post: postId, report_reason: reason.trim() });
+  if (error) throw error;
 }

@@ -1,4 +1,4 @@
-import { Profile, Team } from "./types";
+import { LobbyComment, LobbyPost, Profile, Team } from "./types";
 
 export const majors = [
   "国际商务", "财务管理", "金融科技", "大数据管理与应用", "管理科学", "经济学",
@@ -42,4 +42,15 @@ export const teams: Team[] = [
   { id: "t1", name: "13号楼·向阳小队", building: "13", gender: "female", members: 2, capacity: 4, schedule: "休息时间相对稳定", orientation: "阳面", interests: ["摄影", "电影", "旅行"], summary: "我们喜欢摄影、电影和旅行，也希望在尊重彼此空间的同时，遇到愿意慢慢沟通的新同学。", open: true },
   { id: "t2", name: "晨光同行小队", building: "13", gender: "female", members: 3, capacity: 4, schedule: "更喜欢早些休息", orientation: "都可以", interests: ["跑步", "阅读", "羽毛球"], summary: "我们比较喜欢早些休息，也爱运动和阅读。采光随缘，更在意每个人都能住得自在。", open: true },
   { id: "t3", name: "23号楼探索队", building: "23", gender: "female", members: 6, capacity: 8, schedule: "作息较灵活", orientation: "阳面", interests: ["美食", "桌游", "音乐"], summary: "我们喜欢轻松热闹的相处方式，也尊重每个人的独处时间，正在寻找两位新成员。", open: true },
+];
+
+export const lobbyPosts: LobbyPost[] = [
+  { id: "l1", kind: "chat", body: "大家好，我刚拿到 13 号楼，兴趣爱好是摄影、电影和羽毛球。", createdAt: "2026-07-20T04:18:00.000Z", commentCount: 0, isMine: false, author: profiles[0] },
+  { id: "l2", kind: "recruitment", body: "13 号楼四人间，目前有两位女生。作息大多在 00:00 前后，兴趣爱好是摄影、旅行和电影，希望再了解两位同学。", teamId: "t1", createdAt: "2026-07-20T04:22:00.000Z", commentCount: 2, isMine: false, author: profiles[1] },
+  { id: "l3", kind: "chat", body: "想了解一下 23 号楼套间的公共区域大概是什么样，有知道的同学可以留言。", createdAt: "2026-07-20T04:27:00.000Z", commentCount: 1, isMine: false, author: profiles[4] },
+];
+
+export const lobbyComments: LobbyComment[] = [
+  { id: "c1", postId: "l2", body: "你好，我也是 13 号楼，通常 23:30 左右休息，可以先看看彼此的介绍。", createdAt: "2026-07-20T04:25:00.000Z", isMine: true, author: currentUser },
+  { id: "c2", postId: "l2", body: "我对采光都可以，兴趣爱好是电影和阅读。", createdAt: "2026-07-20T04:26:00.000Z", isMine: false, author: profiles[2] },
 ];
