@@ -140,6 +140,7 @@ alter table team_applications enable row level security;
 alter table notifications enable row level security;
 alter table blocks enable row level security;
 alter table reports enable row level security;
+alter table site_settings enable row level security;
 
 create policy "profiles in same segment" on profiles for select to authenticated using (
   id = auth.uid() or (visible and exists (
@@ -165,6 +166,7 @@ create policy "own notifications" on notifications for select to authenticated u
 create policy "own blocks" on blocks for all to authenticated using (blocker_id = auth.uid()) with check (blocker_id = auth.uid());
 create policy "own reports" on reports for insert to authenticated with check (reporter_id = auth.uid());
 create policy "read own reports" on reports for select to authenticated using (reporter_id = auth.uid());
+create policy "public site settings" on site_settings for select to anon, authenticated using (true);
 
 -- 由 Supabase 定时任务每日调用；选寝日期后 30 天清理本届账号及关联数据。
 create or replace function public.cleanup_expired_cohort()
@@ -179,4 +181,3 @@ begin
   return deleted_count;
 end;
 $$;
-
