@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  AlertTriangle, BookOpen, Camera, Check, Clock3, Flag, HeartHandshake, Info, LockKeyhole,
+  AlertTriangle, BookOpen, Camera, Check, ChevronDown, Clock3, Flag, HeartHandshake, Info, LockKeyhole,
   Mail, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UserRoundPen, X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -204,6 +204,11 @@ export function PlatformApp() {
   };
 
   const openComments = async (post: LobbyPost) => {
+    if (selectedPost?.id === post.id) {
+      setSelectedPost(null);
+      setComments([]);
+      return;
+    }
     setSelectedPost(post);
     if (!supabase) setComments(demoLobbyComments.filter((item) => item.postId === post.id));
     else setComments(await listLobbyComments(supabase, post.id, sessionUserId));
@@ -329,7 +334,7 @@ export function PlatformApp() {
 
     <main className="mx-auto max-w-6xl px-3 py-4 sm:px-6 sm:py-6">
       {loading ? <div className="card grid min-h-72 place-items-center p-8 text-sm text-slate-500">正在进入公共聊天区…</div> : <LobbyPage
-        me={me} posts={posts} links={links} onPublish={publish} onComments={openComments}
+        me={me} posts={posts} links={links} expandedPostId={selectedPost?.id} comments={comments} onPublish={publish} onComments={openComments} onSaveComment={addComment} onDeleteComment={removeComment}
         onDelete={removePost} onReport={async (id) => { if (supabase) await reportLobbyPost(supabase, id, "请管理员查看这条公共聊天内容"); notify("反馈已经收到"); }}
         onContact={requestContact} onOwnRequests={setContactPost} onOpenProfile={setProfilePost} onProfile={() => setShowProfile(true)}
       />}
@@ -349,7 +354,6 @@ export function PlatformApp() {
       onEdit={() => { setProfilePost(null); setShowProfile(true); }}
       sameGender={me.gender === profilePost.author.gender}
     />}
-    {selectedPost && <CommentsModal post={selectedPost} comments={comments} onClose={() => setSelectedPost(null)} onSave={addComment} onDelete={removeComment} />}
     {contactPost && <ContactRequestsModal post={contactPost} links={links.filter((link) => link.postId === contactPost.id && link.role === "recipient")} onClose={() => setContactPost(null)} onRespond={respondContact} onShowContact={setContactToShow} />}
     {contactToShow?.contact && <ContactModal link={contactToShow} onClose={() => setContactToShow(null)} />}
     {showInbox && <InboxModal conversations={conversations} onClose={() => setShowInbox(false)} onOpen={openChat} />}
@@ -359,9 +363,10 @@ export function PlatformApp() {
   </div>;
 }
 
-function LobbyPage({ me, posts, links, onPublish, onComments, onDelete, onReport, onContact, onOwnRequests, onOpenProfile, onProfile }: {
-  me: Profile; posts: LobbyPost[]; links: LobbyContactLink[];
+function LobbyPage({ me, posts, links, expandedPostId, comments, onPublish, onComments, onSaveComment, onDeleteComment, onDelete, onReport, onContact, onOwnRequests, onOpenProfile, onProfile }: {
+  me: Profile; posts: LobbyPost[]; links: LobbyContactLink[]; expandedPostId?: string; comments: LobbyComment[];
   onPublish: (kind: LobbyPostKind, body: string) => Promise<void>; onComments: (post: LobbyPost) => void;
+  onSaveComment: (postId: string, body: string) => Promise<void>; onDeleteComment: (id: string) => void;
   onDelete: (id: string) => void; onReport: (id: string) => void; onContact: (post: LobbyPost) => void;
   onOwnRequests: (post: LobbyPost) => void; onOpenProfile: (post: LobbyPost) => void; onProfile: () => void;
 }) {
@@ -395,7 +400,7 @@ function LobbyPage({ me, posts, links, onPublish, onComments, onDelete, onReport
         {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
       </form>
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-xs"><button onClick={() => setFilter("all")} className={`filter-chip ${filter === "all" ? "filter-chip-active" : ""}`}>全部</button><button onClick={() => setFilter("chat")} className={`filter-chip ${filter === "chat" ? "filter-chip-active" : ""}`}>聊天</button><button onClick={() => setFilter("recruitment")} className={`filter-chip ${filter === "recruitment" ? "filter-chip-active" : ""}`}>只看招募</button><span className="ml-auto text-slate-400">{visible.length} 条</span></div>
-      <div className="lobby-feed">{visible.length ? visible.map((post) => <PostItem key={post.id} post={post} links={links} onComments={() => onComments(post)} onDelete={() => onDelete(post.id)} onReport={() => onReport(post.id)} onContact={() => onContact(post)} onOwnRequests={() => onOwnRequests(post)} onOpenProfile={() => onOpenProfile(post)} />) : <p className="p-10 text-center text-sm text-slate-400">这里暂时没有符合条件的消息</p>}</div>
+      <div className="lobby-feed">{visible.length ? visible.map((post) => <PostItem key={post.id} post={post} links={links} expanded={expandedPostId === post.id} comments={expandedPostId === post.id ? comments : []} onComments={() => onComments(post)} onSaveComment={onSaveComment} onDeleteComment={onDeleteComment} onDelete={() => onDelete(post.id)} onReport={() => onReport(post.id)} onContact={() => onContact(post)} onOwnRequests={() => onOwnRequests(post)} onOpenProfile={() => onOpenProfile(post)} />) : <p className="p-10 text-center text-sm text-slate-400">这里暂时没有符合条件的消息</p>}</div>
     </section>
     <aside className="chat-side space-y-4">
       <div className="card p-5">
@@ -422,7 +427,7 @@ function LobbyPage({ me, posts, links, onPublish, onComments, onDelete, onReport
   </div>;
 }
 
-function PostItem({ post, links, onComments, onDelete, onReport, onContact, onOwnRequests, onOpenProfile }: { post: LobbyPost; links: LobbyContactLink[]; onComments: () => void; onDelete: () => void; onReport: () => void; onContact: () => void; onOwnRequests: () => void; onOpenProfile: () => void }) {
+function PostItem({ post, links, expanded, comments, onComments, onSaveComment, onDeleteComment, onDelete, onReport, onContact, onOwnRequests, onOpenProfile }: { post: LobbyPost; links: LobbyContactLink[]; expanded: boolean; comments: LobbyComment[]; onComments: () => void; onSaveComment: (postId: string, body: string) => Promise<void>; onDeleteComment: (id: string) => void; onDelete: () => void; onReport: () => void; onContact: () => void; onOwnRequests: () => void; onOpenProfile: () => void }) {
   const link = links.find((item) => item.postId === post.id && item.role === "requester");
   const incoming = links.filter((item) => item.postId === post.id && item.role === "recipient" && item.status !== "declined");
   const time = new Date(post.createdAt).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -433,6 +438,7 @@ function PostItem({ post, links, onComments, onDelete, onReport, onContact, onOw
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-bold text-slate-900">{post.author.nickname}</span>
         {post.author.isAdmin && <AdminBadge />}
+        {post.isExample && <Badge tone="blue">示例</Badge>}
         <Badge tone="gray">{post.author.gender === "female" ? "女生" : "男生"}</Badge>
         {post.kind === "recruitment" && <Badge tone="yellow">高亮招募</Badge>}
         <time className="text-[10px] text-slate-300">{time}</time>
@@ -440,10 +446,11 @@ function PostItem({ post, links, onComments, onDelete, onReport, onContact, onOw
       {post.kind === "recruitment" && <div className="mt-2 flex flex-wrap gap-2"><Badge tone="green"><Clock3 className="mr-1 size-3" />{post.author.weekdaySleep}休息</Badge><Badge tone="gray">{post.author.major}</Badge><Badge tone="gray">{post.author.smoking}</Badge>{post.author.interests.slice(0, 4).map((item) => <Badge key={item} tone="gray">{item}</Badge>)}</div>}
       <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{post.body}</p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button onClick={onComments} className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700"><MessageCircle className="size-3.5" />{post.commentCount ? `${post.commentCount} 条评论` : "评论"}</button>
+        <button onClick={onComments} aria-expanded={expanded} className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700"><MessageCircle className="size-3.5" />{post.commentCount ? `${post.commentCount} 条评论` : "评论"}<ChevronDown className={`size-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} /></button>
         {post.isMine ? ((post.kind === "recruitment" || incoming.length > 0) && <button onClick={onOwnRequests} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><HeartHandshake className="size-3.5" />{incoming.length ? `${incoming.length} 个联系意愿` : "查看联系意愿"}</button>) : post.kind === "recruitment" && <button onClick={onContact} disabled={link?.status === "pending"} className="recruitment-contact-button"><HeartHandshake className="size-4" />{contactLabel}</button>}
         {post.isMine ? <button onClick={onDelete} className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-rose-700"><Trash2 className="size-3.5" />删除</button> : <button onClick={() => { if (window.confirm("要把这条信息交给管理员查看吗？")) onReport(); }} className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-amber-700"><Flag className="size-3.5" />反馈</button>}
       </div>
+      {expanded && <InlineComments post={post} comments={comments} onSave={onSaveComment} onDelete={onDeleteComment} />}
     </div>
   </article>;
 }
@@ -602,22 +609,17 @@ function DirectChatModal({ conversation, messages, onClose, onSend }: { conversa
   return <Modal onClose={onClose} wide><div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4"><div className="flex min-w-0 items-center gap-3"><Avatar profile={conversation.other} size="sm" /><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="truncate font-black text-slate-900">{conversation.other.nickname}</h2>{conversation.other.isAdmin && <AdminBadge />}</div><p className="text-xs text-slate-400">{conversation.other.major} · 私聊</p></div></div><button className="icon-button" onClick={onClose}><X className="size-5" /></button></div><div className="direct-message-list mt-4">{messages.length ? messages.map((message) => <div key={message.id} className={`direct-message ${message.isMine ? "direct-message-mine" : ""}`}><div className="direct-message-meta"><span>{message.sender.nickname}</span>{message.sender.isAdmin && <AdminBadge />}</div><p>{message.body}</p></div>) : <div className="p-10 text-center text-sm text-slate-400">还没有消息，想说什么都可以慢慢写。</div>}</div><form onSubmit={submit} className="mt-4"><div className="flex items-end gap-2"><textarea className="lobby-composer" rows={2} value={body} onChange={(event) => setBody(event.target.value.slice(0, 500))} placeholder="随便打个招呼吧～" /><button disabled={sending || !body.trim()} className="button button-primary shrink-0"><Send className="size-4" />发送</button></div>{error && <p className="mt-2 text-xs text-rose-700">{error}</p>}<p className="mt-2 text-[11px] leading-5 text-slate-400">不同性别也可以自由聊天、交朋友；组队选寝仍只支持同性。</p></form></Modal>;
 }
 
-function CommentsModal({ post, comments, onClose, onSave, onDelete }: { post: LobbyPost; comments: LobbyComment[]; onClose: () => void; onSave: (postId: string, body: string) => Promise<void>; onDelete: (id: string) => void }) {
+function InlineComments({ post, comments, onSave, onDelete }: { post: LobbyPost; comments: LobbyComment[]; onSave: (postId: string, body: string) => Promise<void>; onDelete: (id: string) => void }) {
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  return <Modal onClose={onClose} wide>
-    <div className="flex items-start justify-between">
-      <div><p className="text-xs font-bold tracking-[.18em] text-sky-700">评论</p><h2 className="mt-1 text-xl font-black">查看和发布评论</h2></div>
-      <button className="icon-button" onClick={onClose}><X className="size-5" /></button>
-    </div>
-    <div className="mt-4 rounded-2xl bg-slate-50 p-4"><div className="flex items-center gap-2"><b className="text-sm">{post.author.nickname}</b>{post.author.isAdmin && <AdminBadge />}</div><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{post.body}</p></div>
-    <div className="mt-4 max-h-72 space-y-1 overflow-y-auto">{comments.length ? comments.map((comment) => <div key={comment.id} className="flex gap-3 rounded-xl p-3 hover:bg-slate-50"><Avatar profile={comment.author} size="sm" /><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><b className="text-xs">{comment.author.nickname}</b>{comment.author.isAdmin && <AdminBadge />}{comment.isMine && <button onClick={() => onDelete(comment.id)} className="ml-auto text-[10px] text-slate-400">删除</button>}</div><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-600">{comment.body}</p></div></div>) : <p className="p-8 text-center text-sm text-slate-400">暂时还没有评论</p>}</div>
+  return <div className="inline-comments">
+    <div className="max-h-72 space-y-1 overflow-y-auto">{comments.length ? comments.map((comment) => <div key={comment.id} className="flex gap-3 rounded-xl p-3 hover:bg-white/70"><Avatar profile={comment.author} size="sm" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><b className="text-xs">{comment.author.nickname}</b>{comment.author.id === post.author.id && <span className="owner-badge">楼主</span>}{comment.author.isAdmin && <AdminBadge />}{comment.isMine && <button onClick={() => onDelete(comment.id)} className="ml-auto text-[10px] text-slate-400">删除</button>}</div><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-600">{comment.body}</p></div></div>) : <p className="p-6 text-center text-sm text-slate-400">暂时还没有评论</p>}</div>
     <form className="mt-4" onSubmit={async (event) => { event.preventDefault(); if (!body.trim()) return; setSaving(true); setError(""); try { await onSave(post.id, body); setBody(""); } catch (cause) { setError(cause instanceof Error ? cause.message : "这次没有发送成功"); } finally { setSaving(false); } }}>
       <div className="flex items-end gap-2"><textarea className="lobby-composer" rows={2} value={body} onChange={(e) => setBody(e.target.value.slice(0, 300))} placeholder="鳝鱼结善缘，鳄鱼伤人心" /><button disabled={saving || !body.trim()} className="button button-primary shrink-0"><Send className="size-4" />评论</button></div>
       {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
     </form>
-  </Modal>;
+  </div>;
 }
 
 function ContactRequestsModal({ post, links, onClose, onRespond, onShowContact }: { post: LobbyPost; links: LobbyContactLink[]; onClose: () => void; onRespond: (id: string, accept: boolean) => void; onShowContact: (link: LobbyContactLink) => void }) {

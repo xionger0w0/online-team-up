@@ -55,6 +55,7 @@ export type LobbyPostKind = "chat" | "recruitment";
 
 export interface LobbyPost {
   id: string;
+  isExample?: boolean;
   kind: LobbyPostKind;
   body: string;
   teamId?: string;

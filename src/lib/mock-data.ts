@@ -46,9 +46,9 @@ export const teams: Team[] = [
 ];
 
 export const lobbyPosts: LobbyPost[] = [
-  { id: "l1", kind: "chat", body: "大家好，兴趣爱好是摄影、电影和羽毛球。最近也在慢慢了解学校生活。", createdAt: "2026-07-20T04:18:00.000Z", commentCount: 0, isMine: false, author: profiles[0] },
-  { id: "l2", kind: "recruitment", body: "想认识作息大多在 00:00 前后、愿意彼此尊重空间的女生。平时喜欢摄影、旅行和电影，可以先评论聊聊。", createdAt: "2026-07-20T04:22:00.000Z", commentCount: 2, isMine: false, author: profiles[1] },
-  { id: "l3", kind: "chat", body: "有人也喜欢桌游或音乐吗？开学后可以一起参加社团活动。", createdAt: "2026-07-20T04:27:00.000Z", commentCount: 1, isMine: false, author: profiles[4] },
+  { id: "l1", isExample: true, kind: "chat", body: "大家好，兴趣爱好是摄影、电影和羽毛球。最近也在慢慢了解学校生活。", createdAt: "2026-07-20T04:18:00.000Z", commentCount: 0, isMine: false, author: profiles[0] },
+  { id: "l2", isExample: true, kind: "recruitment", body: "想认识作息大多在 00:00 前后、愿意彼此尊重空间的女生。平时喜欢摄影、旅行和电影，可以先评论聊聊。", createdAt: "2026-07-20T04:22:00.000Z", commentCount: 2, isMine: false, author: profiles[1] },
+  { id: "l3", isExample: true, kind: "chat", body: "有人也喜欢桌游或音乐吗？开学后可以一起参加社团活动。", createdAt: "2026-07-20T04:27:00.000Z", commentCount: 1, isMine: false, author: profiles[4] },
 ];
 
 export const lobbyComments: LobbyComment[] = [
