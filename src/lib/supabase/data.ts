@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Building, Gender, LobbyComment, LobbyPost, LobbyPostKind, Orientation, Profile, SleepSlot, Team, WakeSlot } from "@/lib/types";
+import type { Building, Gender, LobbyComment, LobbyContactLink, LobbyContactStatus, LobbyPost, LobbyPostKind, Orientation, Profile, SleepSlot, Team, WakeSlot } from "@/lib/types";
 
 type ContactType = "微信" | "QQ";
 
@@ -7,16 +7,9 @@ export interface ProfileInput {
   nickname: string;
   avatar: string;
   gender: Gender;
-  building: Building;
-  major: string;
-  weekdaySleep: SleepSlot;
-  weekendSleep: SleepSlot;
-  weekdayWake: WakeSlot;
-  weekendWake: WakeSlot;
-  orientation: Orientation;
+  sleep: SleepSlot;
   interests: string[];
   intro: string;
-  visible: boolean;
   contact: { type: ContactType; value: string };
 }
 
@@ -87,16 +80,16 @@ export async function saveProfile(client: SupabaseClient, userId: string, input:
     nickname: input.nickname.trim(),
     avatar_url: input.avatar,
     gender: input.gender,
-    building: input.building,
-    major: input.major,
-    weekday_sleep: input.weekdaySleep,
-    weekend_sleep: input.weekendSleep,
-    weekday_wake: input.weekdayWake,
-    weekend_wake: input.weekendWake,
-    orientation: input.orientation,
+    building: "undecided",
+    major: "暂不填写",
+    weekday_sleep: input.sleep,
+    weekend_sleep: input.sleep,
+    weekday_wake: "不固定",
+    weekend_wake: "不固定",
+    orientation: "都可以",
     interests: input.interests.slice(0, 8),
     intro: input.intro.trim().slice(0, 200),
-    visible: input.visible,
+    visible: true,
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
@@ -230,6 +223,9 @@ interface LobbyPostRow extends LobbyAuthorRow {
   team_id: string | null;
   created_at: string;
   comment_count: number;
+  author_sleep: SleepSlot;
+  author_interests: string[];
+  author_intro: string;
 }
 
 interface LobbyCommentRow extends LobbyAuthorRow {
@@ -239,7 +235,7 @@ interface LobbyCommentRow extends LobbyAuthorRow {
   created_at: string;
 }
 
-function mapLobbyAuthor(row: LobbyAuthorRow): LobbyPost["author"] {
+function mapLobbyAuthor(row: LobbyAuthorRow) {
   return {
     id: row.author_id,
     nickname: row.author_nickname,
@@ -261,7 +257,12 @@ export async function listLobbyPosts(client: SupabaseClient, ownUserId: string):
     createdAt: row.created_at,
     commentCount: Number(row.comment_count),
     isMine: row.author_id === ownUserId,
-    author: mapLobbyAuthor(row),
+    author: {
+      ...mapLobbyAuthor(row),
+      weekdaySleep: row.author_sleep,
+      interests: row.author_interests || [],
+      intro: row.author_intro || "",
+    },
   }));
 }
 
@@ -306,5 +307,51 @@ export async function deleteLobbyComment(client: SupabaseClient, commentId: stri
 
 export async function reportLobbyPost(client: SupabaseClient, postId: string, reason: string) {
   const { error } = await client.rpc("report_lobby_post", { target_post: postId, report_reason: reason.trim() });
+  if (error) throw error;
+}
+
+interface LobbyContactLinkRow {
+  request_id: string;
+  post_id: string;
+  relation_role: "requester" | "recipient";
+  request_status: LobbyContactStatus;
+  created_at: string;
+  other_id: string;
+  other_nickname: string;
+  other_avatar: string | null;
+  other_gender: Gender;
+  other_contact_type: ContactType | null;
+  other_contact_value: string | null;
+}
+
+export async function listLobbyContactLinks(client: SupabaseClient): Promise<LobbyContactLink[]> {
+  const { data, error } = await client.rpc("list_lobby_contact_links");
+  if (error) throw error;
+  return ((data || []) as LobbyContactLinkRow[]).map((row) => ({
+    requestId: row.request_id,
+    postId: row.post_id,
+    role: row.relation_role,
+    status: row.request_status,
+    createdAt: row.created_at,
+    other: {
+      id: row.other_id,
+      nickname: row.other_nickname,
+      avatar: row.other_avatar || (row.other_gender === "female" ? "🌿" : "🌊"),
+      gender: row.other_gender,
+    },
+    contact: row.request_status === "accepted" && row.other_contact_type && row.other_contact_value
+      ? { type: row.other_contact_type, value: row.other_contact_value }
+      : undefined,
+  }));
+}
+
+export async function requestLobbyContact(client: SupabaseClient, postId: string) {
+  const { data, error } = await client.rpc("request_lobby_contact", { target_post: postId });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function respondLobbyContact(client: SupabaseClient, requestId: string, accept: boolean) {
+  const { error } = await client.rpc("respond_lobby_contact", { target_request: requestId, accept_request: accept });
   if (error) throw error;
 }

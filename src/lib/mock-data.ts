@@ -45,12 +45,12 @@ export const teams: Team[] = [
 ];
 
 export const lobbyPosts: LobbyPost[] = [
-  { id: "l1", kind: "chat", body: "大家好，我刚拿到 13 号楼，兴趣爱好是摄影、电影和羽毛球。", createdAt: "2026-07-20T04:18:00.000Z", commentCount: 0, isMine: false, author: profiles[0] },
-  { id: "l2", kind: "recruitment", body: "13 号楼四人间，目前有两位女生。作息大多在 00:00 前后，兴趣爱好是摄影、旅行和电影，希望再了解两位同学。", teamId: "t1", createdAt: "2026-07-20T04:22:00.000Z", commentCount: 2, isMine: false, author: profiles[1] },
-  { id: "l3", kind: "chat", body: "想了解一下 23 号楼套间的公共区域大概是什么样，有知道的同学可以留言。", createdAt: "2026-07-20T04:27:00.000Z", commentCount: 1, isMine: false, author: profiles[4] },
+  { id: "l1", kind: "chat", body: "大家好，兴趣爱好是摄影、电影和羽毛球。最近也在慢慢了解学校生活。", createdAt: "2026-07-20T04:18:00.000Z", commentCount: 0, isMine: false, author: profiles[0] },
+  { id: "l2", kind: "recruitment", body: "想认识作息大多在 00:00 前后、愿意彼此尊重空间的女生。平时喜欢摄影、旅行和电影，可以先留言慢慢聊。", createdAt: "2026-07-20T04:22:00.000Z", commentCount: 2, isMine: false, author: profiles[1] },
+  { id: "l3", kind: "chat", body: "有人也喜欢桌游或音乐吗？开学后可以一起参加社团活动。", createdAt: "2026-07-20T04:27:00.000Z", commentCount: 1, isMine: false, author: profiles[4] },
 ];
 
 export const lobbyComments: LobbyComment[] = [
-  { id: "c1", postId: "l2", body: "你好，我也是 13 号楼，通常 23:30 左右休息，可以先看看彼此的介绍。", createdAt: "2026-07-20T04:25:00.000Z", isMine: true, author: currentUser },
+  { id: "c1", postId: "l2", body: "你好，我通常 23:30 左右休息，也喜欢电影，可以先看看彼此的介绍。", createdAt: "2026-07-20T04:25:00.000Z", isMine: true, author: currentUser },
   { id: "c2", postId: "l2", body: "我对采光都可以，兴趣爱好是电影和阅读。", createdAt: "2026-07-20T04:26:00.000Z", isMine: false, author: profiles[2] },
 ];
