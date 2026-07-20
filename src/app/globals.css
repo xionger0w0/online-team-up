@@ -101,6 +101,10 @@ button { cursor: pointer; }
 .lobby-message:hover { background: #fafcfb; }
 .lobby-message-recruitment { margin: .65rem; border: 1px solid #f2dfb3; border-radius: 1.1rem; background: #fffbef; }
 .lobby-message-recruitment + .lobby-message { border-top: 0; }
+.profile-author-button { border: 0; background: transparent; padding: 0; transition: transform .15s ease, box-shadow .15s ease; }
+.profile-author-button:hover { transform: translateY(-1px); box-shadow: 0 0 0 4px rgba(22,119,167,.08); }
+.profile-name-button { border: 0; background: transparent; padding: 0; text-align: left; }
+.profile-name-button:hover { color: #1677a7; text-decoration: underline; text-underline-offset: .2rem; }
 .lobby-composer { min-height: 3.1rem; width: 100%; resize: vertical; border: 1px solid #dce5ea; border-radius: 1rem; background: white; padding: .75rem .9rem; color: #1e293b; font-size: .875rem; line-height: 1.4rem; outline: 0; }
 .lobby-composer:focus { border-color: #38a1ce; box-shadow: 0 0 0 3px rgba(56,161,206,.12); }
 
@@ -115,6 +119,10 @@ button { cursor: pointer; }
 .welcome-step { border: 1px solid rgba(140,94,58,.1); border-radius: 1.1rem; background: rgba(255,255,255,.74); padding: 1rem; }
 .welcome-step b { color: #6f452d; font-size: .8rem; }
 .welcome-step p { margin-top: .45rem; color: #64748b; font-size: .75rem; line-height: 1.25rem; }
+.profile-preview { display: grid; gap: .75rem; }
+.profile-preview > div { border: 1px solid #edf1f3; border-radius: 1rem; background: #fbfcfc; padding: .9rem 1rem; }
+.profile-preview span { display: block; margin-bottom: .35rem; color: #94a3b8; font-size: .7rem; font-weight: 700; letter-spacing: .04em; }
+.profile-preview b, .profile-preview p { color: #475569; font-size: .875rem; line-height: 1.5rem; }
 
 .field { display: block; }
 .field > span { display: block; margin-bottom: .45rem; color: #475569; font-size: .75rem; font-weight: 700; }
