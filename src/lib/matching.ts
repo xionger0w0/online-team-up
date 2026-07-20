@@ -52,9 +52,9 @@ export function calculateMatch(me: Profile, candidate: Profile): MatchResult | n
   const total = Math.round(schedule * 0.55 + hobbies * 0.4 + orientation * 0.05);
   const shared = me.interests.filter((item) => candidate.interests.includes(item));
   const reasons = [
-    schedule >= 82 ? "工作日与周末的生活节奏比较接近" : "生活节奏各有一些弹性",
-    shared.length ? `都愿意分享对${shared.slice(0, 2).join("、")}的喜欢` : "目前看见的兴趣交集不多，也可以从日常聊起",
-    orientation >= 88 ? "对房间采光的期待比较接近" : "对采光的期待不完全一样，可以先聊聊",
+    schedule >= 82 ? "作息时间比较接近" : "作息时间有一些不同",
+    shared.length ? `共同兴趣：${shared.slice(0, 2).join("、")}` : "兴趣爱好暂时没有明显重合",
+    orientation >= 88 ? "采光期待比较接近" : "采光期待不完全相同",
   ];
   return {
     profile: candidate,
@@ -63,7 +63,7 @@ export function calculateMatch(me: Profile, candidate: Profile): MatchResult | n
     hobbies,
     orientation,
     reasons,
-    caution: schedule < 65 ? "周末的生活节奏可能不太一样，可以先聊聊彼此在意的安静时间" : undefined,
+    caution: schedule < 65 ? "周末作息差异较大，可以根据需要进一步了解" : undefined,
   };
 }
 

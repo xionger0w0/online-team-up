@@ -2,8 +2,8 @@
 
 import {
   AlertTriangle, Bell, Building2, Check, ChevronRight, CircleUserRound, Clock3,
-  Heart, Home, LockKeyhole, Menu, Search, ShieldCheck, Sparkles, UserPlus,
-  Users, X,
+  Coffee, Compass, Home, LockKeyhole, Menu, MessageCircle, Search, ShieldCheck,
+  Sparkles, UserPlus, Users, X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { currentUser as demoCurrentUser, majors, profiles as demoProfiles, teams as demoTeams } from "@/lib/mock-data";
@@ -20,9 +20,9 @@ type Tab = "home" | "plaza" | "recommend" | "teams" | "me";
 
 const navItems: { id: Tab; label: string; icon: typeof Home }[] = [
   { id: "home", label: "首页", icon: Home },
-  { id: "plaza", label: "广场", icon: Users },
-  { id: "recommend", label: "推荐", icon: Sparkles },
-  { id: "teams", label: "队伍", icon: UserPlus },
+  { id: "plaza", label: "同楼", icon: Users },
+  { id: "recommend", label: "相处线索", icon: Sparkles },
+  { id: "teams", label: "同行小队", icon: UserPlus },
   { id: "me", label: "我的", icon: CircleUserRound },
 ];
 
@@ -36,36 +36,27 @@ function Badge({ children, tone = "blue" }: { children: React.ReactNode; tone?: 
   return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${colors[tone]}`}>{children}</span>;
 }
 
-function ScoreRing({ score }: { score: number }) {
-  return (
-    <div className="relative grid size-16 place-items-center rounded-full" style={{ background: `conic-gradient(#1677a7 ${score * 3.6}deg, #e6eef2 0deg)` }}>
-      <div className="grid size-12 place-items-center rounded-full bg-white"><strong className="text-lg text-sky-900">{score}</strong><span className="-mt-2 text-[9px] text-slate-400">相处参考</span></div>
-    </div>
-  );
-}
-
 function ProfileCard({ result, liked, canContact, onLike, onContact }: { result: MatchResult; liked: boolean; canContact: boolean; onLike: () => void; onContact: () => void }) {
   const p = result.profile;
   return (
-    <article className="card group p-5">
+    <article className="card profile-card group p-5">
       <div className="flex items-start gap-4">
         <Avatar profile={p} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-slate-900">{p.nickname}</h3><Badge tone="yellow">校园验证稍后开放</Badge>{p.teamStatus !== "none" && <Badge tone="green">已有队伍 · 欢迎交流</Badge>}</div>
           <p className="mt-1 text-sm text-slate-500">{p.building}号楼 · {p.major}</p>
         </div>
-        <ScoreRing score={result.total} />
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700"><Coffee className="size-5" /></span>
       </div>
       <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-600">{p.intro}</p>
       <div className="mt-4 flex flex-wrap gap-2">{p.interests.map((tag) => <Badge key={tag} tone="gray">{tag}</Badge>)}</div>
-      <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-3 text-center text-xs text-slate-500">
-        <div><b className="block text-sm text-slate-800">{result.schedule}%</b>作息接近度</div>
-        <div><b className="block text-sm text-slate-800">{result.hobbies}%</b>兴趣交集</div>
-        <div><b className="block text-sm text-slate-800">{result.orientation}%</b>采光意向</div>
+      <div className="mt-4 rounded-2xl bg-[#f7f3ea] p-4">
+        <p className="text-xs font-bold text-amber-900">愿意分享的生活信息</p>
+        <div className="mt-2 space-y-1.5 text-xs leading-5 text-slate-600">{result.reasons.slice(0, 2).map((reason) => <p key={reason} className="flex gap-2"><span className="text-amber-500">•</span><span>{reason}</span></p>)}</div>
       </div>
       <div className="mt-4 flex gap-2">
-        <button onClick={onLike} className={`button flex-1 ${liked ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200" : "button-primary"}`}><Heart className={`size-4 ${liked ? "fill-current" : ""}`} />{liked ? "已表达认识意愿" : "想进一步认识"}</button>
-        {canContact && <button onClick={onContact} className="button button-secondary">继续联系</button>}
+        <button onClick={onLike} className={`button flex-1 ${liked ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200" : "button-primary"}`}><MessageCircle className="size-4" />{liked ? "已表示愿意认识" : "愿意认识"}</button>
+        {canContact && <button onClick={onContact} className="button button-secondary">查看联系方式</button>}
       </div>
     </article>
   );
@@ -82,7 +73,7 @@ function TeamCard({ team, applied, onApply }: { team: Team; applied: boolean; on
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-sky-600" style={{ width: `${percent}%` }} /></div>
       <p className="mt-4 text-sm leading-6 text-slate-600">{team.summary}</p>
       <div className="mt-4 flex flex-wrap gap-2"><Badge tone="green">{team.schedule}</Badge><Badge tone="yellow">采光更倾向{team.orientation}</Badge>{team.interests.slice(0, 3).map((tag) => <Badge key={tag} tone="gray">{tag}</Badge>)}</div>
-      <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="text-xs text-slate-400">加入后再慢慢彼此认识</span><button onClick={onApply} disabled={applied} className="button button-primary disabled:bg-slate-200 disabled:text-slate-500">{applied ? <><Check className="size-4" />已提交意向</> : <>提交加入意向<ChevronRight className="size-4" /></>}</button></div>
+      <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4"><span className="text-xs text-slate-400">可以先了解，不需要马上决定</span><button onClick={onApply} disabled={applied} className="button button-primary disabled:bg-slate-200 disabled:text-slate-500">{applied ? <><Check className="size-4" />已留下加入意向</> : <>留下加入意向<ChevronRight className="size-4" /></>}</button></div>
     </article>
   );
 }
@@ -159,7 +150,7 @@ export function PlatformApp() {
     if (!supabase) {
       if (profile.id === "p1" && !wasLiked) {
         setContacts(new Map(contacts).set(profile.id, profile.contact));
-        notify("你和小满都愿意进一步认识，联系方式现在可以看到了");
+        notify("小满也愿意认识你，联系方式现在可以看到了");
       }
       return;
     }
@@ -172,8 +163,8 @@ export function PlatformApp() {
         const contact = await getUnlockedContact(supabase, profile.id);
         if (contact) {
           setContacts(new Map(contacts).set(profile.id, contact));
-          notify(`你和${profile.nickname}都愿意进一步认识，联系方式现在可以看到了`);
-        } else notify("心意已悄悄送达；如果对方也愿意，双方才会看到联系方式");
+          notify(`${profile.nickname}也愿意认识你，联系方式现在可以看到了`);
+        } else notify("认识意愿已经保存；不需要马上聊天，对方愿意时再继续就好");
       }
     } catch (error) {
       setLiked(new Set(liked));
@@ -217,7 +208,7 @@ export function PlatformApp() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7fafb] text-slate-800">
+    <div className="min-h-screen bg-[#f7f7f2] text-slate-800">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl">
         <div className="mx-auto flex h-17 max-w-7xl items-center gap-8 px-4 sm:px-6">
           <button onClick={() => setTab("home")} className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-2xl bg-sky-900 text-xl text-white">伴</span><span className="text-left"><strong className="block leading-4 text-sky-950">线上组队</strong><small className="text-[10px] tracking-widest text-slate-400">第三方个人网站</small></span></button>
@@ -234,7 +225,7 @@ export function PlatformApp() {
 
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 md:pb-12 md:pt-9">
         {loading ? <div className="card grid min-h-72 place-items-center p-8 text-sm text-slate-500">正在为你准备一个安静、私密的小空间…</div> : <>
-          {tab === "home" && <HomePage me={me} matches={matches} onExplore={() => setTab("recommend")} onProfile={() => setShowProfile(true)} />}
+          {tab === "home" && <HomePage me={me} matches={matches} onPeople={() => { setPlazaType("people"); setTab("plaza"); }} onTeams={() => { setPlazaType("teams"); setTab("plaza"); }} onProfile={() => setShowProfile(true)} />}
           {tab === "plaza" && <PlazaPage me={me} teams={teamList} type={plazaType} setType={setPlazaType} matches={matches} liked={liked} contacts={contacts} applied={applied} onLike={toggleLike} onContact={openContact} onApply={applyTeam} />}
           {tab === "recommend" && <RecommendPage matches={matches} liked={liked} contacts={contacts} onLike={toggleLike} onContact={openContact} />}
           {tab === "teams" && <TeamsPage me={me} teams={teamList} applied={applied} onApply={applyTeam} onCreate={() => setShowCreateTeam(true)} />}
@@ -264,29 +255,40 @@ export function PlatformApp() {
   );
 }
 
-function HomePage({ me, matches, onExplore, onProfile }: { me: Profile; matches: MatchResult[]; onExplore: () => void; onProfile: () => void }) {
+function HomePage({ me, matches, onPeople, onTeams, onProfile }: { me: Profile; matches: MatchResult[]; onPeople: () => void; onTeams: () => void; onProfile: () => void }) {
   return <div className="space-y-8">
-    <section className="hero-panel overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14"><div className="relative z-10 max-w-2xl"><Badge tone="yellow">2026 新生 · {me.building}号楼</Badge><h1 className="mt-5 text-4xl font-black tracking-tight text-white sm:text-6xl">选寝前，慢慢认识<br /><span className="text-amber-300">可能同行的人</span></h1><p className="mt-5 max-w-xl text-base leading-7 text-sky-100 sm:text-lg">从生活节奏和兴趣开始了解未来室友。只有彼此都愿意进一步认识时，联系方式才会对双方可见。</p><div className="mt-8 flex flex-wrap gap-3"><button onClick={onExplore} className="button bg-amber-300 px-6 py-3 text-sky-950 hover:bg-amber-200"><Sparkles className="size-5" />看看相处参考</button><button onClick={onProfile} className="button border border-white/20 bg-white/10 px-6 py-3 text-white hover:bg-white/15">介绍一下自己</button></div></div><div className="hero-orbit hidden lg:block"><span>13</span><span>14</span><span>15</span><span>19</span><span>23</span></div></section>
-    <section className="grid gap-4 sm:grid-cols-3"><InfoTile icon={ShieldCheck} title="把边界放在前面" text="只收集必要信息，联系方式由双方共同决定是否交换" /><InfoTile icon={Sparkles} title="参考，而不是定义" text="作息、兴趣与采光意向只用来帮助开启交流" /><InfoTile icon={Building2} title="尊重住宿安排" text="根据学校分配的楼栋与住宿范围，展示更相关的同学" /></section>
-    <section><SectionTitle eyebrow="相处参考" title="也许可以从认识开始" action="再看看" onAction={onExplore} /><div className="grid gap-4 lg:grid-cols-3">{matches.slice(0, 3).map((item) => <MiniMatch key={item.profile.id} result={item} />)}</div></section>
-    <section className="card grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-center"><div><h2 className="text-xl font-bold text-slate-900">暂时还没有加入小队也没关系</h2><p className="mt-2 text-sm leading-6 text-slate-500">可以先看看同楼同学的自我介绍，也可以了解不同小队的相处期待。为了让选择更清楚，每个人同一时间加入一个小队。</p></div><button className="button button-secondary" onClick={onExplore}>随便看看<ChevronRight className="size-4" /></button></section>
+    <section className="hero-panel overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14"><div className="relative z-10 max-w-2xl"><Badge tone="yellow">2026 新生 · {me.building}号楼</Badge><h1 className="mt-5 text-4xl font-black tracking-tight text-white sm:text-6xl">同一栋楼，<br /><span className="text-amber-300">先看看彼此的介绍</span></h1><p className="mt-5 max-w-xl text-base leading-7 text-sky-100 sm:text-lg">不必急着开始聊天。可以先了解大家愿意分享的作息、兴趣和生活习惯，再按自己的节奏决定。</p><div className="mt-8 flex flex-wrap gap-3"><button onClick={onPeople} className="button bg-amber-300 px-6 py-3 text-sky-950 hover:bg-amber-200"><Users className="size-5" />查看{me.building}号楼同学</button><button onClick={onTeams} className="button border border-white/20 bg-white/10 px-6 py-3 text-white hover:bg-white/15"><Compass className="size-5" />查看同行小队</button></div><button onClick={onProfile} className="mt-5 text-sm font-semibold text-sky-100 underline decoration-white/30 underline-offset-4 hover:text-white">填写我的介绍 →</button></div><div className="campus-notes hidden lg:block"><span>兴趣：羽毛球</span><span>作息：00:00 前后</span><span>采光：都可以</span></div></section>
+    <section className="grid gap-4 sm:grid-cols-2"><button onClick={onPeople} className="path-card group text-left"><span className="path-icon bg-sky-100 text-sky-800"><Users className="size-6" /></span><span><b>先看看同楼同学</b><small>按昵称、专业、兴趣或生活节奏寻找</small></span><ChevronRight className="ml-auto size-5 text-slate-300 transition-transform group-hover:translate-x-1" /></button><button onClick={onTeams} className="path-card group text-left"><span className="path-icon bg-amber-100 text-amber-800"><Compass className="size-6" /></span><span><b>再看看同行小队</b><small>了解小队的相处期待，先聊聊再决定</small></span><ChevronRight className="ml-auto size-5 text-slate-300 transition-transform group-hover:translate-x-1" /></button></section>
+    <section><SectionTitle eyebrow="来自同楼的介绍" title="可以先安静地看看" action="查看更多" onAction={onPeople} /><div className="grid gap-4 lg:grid-cols-3">{matches.slice(0, 3).map((item) => <MiniMatch key={item.profile.id} result={item} onOpen={onPeople} />)}</div></section>
+    <section className="grid gap-4 sm:grid-cols-3"><InfoTile icon={ShieldCheck} title="你来决定边界" text="联系方式只有双方都愿意时才会显示" /><InfoTile icon={MessageCircle} title="不急着下结论" text="生活线索只是聊天的开头，不是给人打分" /><InfoTile icon={Building2} title="只看相关同学" text={`优先展示${me.building}号楼、住宿范围相同的同学`} /></section>
   </div>;
 }
 
 function InfoTile({ icon: Icon, title, text }: { icon: typeof Home; title: string; text: string }) { return <div className="card flex gap-4 p-5"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-800"><Icon className="size-5" /></span><div><h3 className="font-bold text-slate-900">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{text}</p></div></div>; }
-function MiniMatch({ result }: { result: MatchResult }) { return <div className="card flex items-center gap-4 p-4"><Avatar profile={result.profile} /><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><strong>{result.profile.nickname}</strong><Badge tone="yellow">校园验证稍后开放</Badge></div><p className="mt-1 truncate text-xs text-slate-500">{result.profile.major} · {result.profile.interests.slice(0, 2).join(" / ")}</p></div><div className="text-center"><strong className="text-xl text-sky-900">{result.total}</strong><span className="block text-[9px] text-slate-400">相处参考</span></div></div>; }
+function MiniMatch({ result, onOpen }: { result: MatchResult; onOpen: () => void }) { return <button onClick={onOpen} className="card group flex items-center gap-4 p-4 text-left"><Avatar profile={result.profile} /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong>{result.profile.nickname}</strong><Badge tone="yellow">{result.profile.building}号楼</Badge></div><p className="mt-1 truncate text-xs text-slate-500">{result.profile.major} · {result.profile.interests.slice(0, 2).join(" / ")}</p><p className="mt-2 truncate text-xs text-amber-800">{result.reasons[0]}</p></div><ChevronRight className="size-5 shrink-0 text-slate-300 transition-transform group-hover:translate-x-1" /></button>; }
 function SectionTitle({ eyebrow, title, action, onAction }: { eyebrow: string; title: string; action?: string; onAction?: () => void }) { return <div className="mb-4 flex items-end justify-between"><div><p className="text-xs font-bold tracking-[.2em] text-sky-700">{eyebrow}</p><h2 className="mt-1 text-2xl font-black text-slate-900">{title}</h2></div>{action && <button onClick={onAction} className="text-sm font-semibold text-sky-700">{action} →</button>}</div>; }
 
 function PlazaPage({ me, teams, type, setType, matches, liked, contacts, applied, onLike, onContact, onApply }: { me: Profile; teams: Team[]; type: "people" | "teams"; setType: (v: "people" | "teams") => void; matches: MatchResult[]; liked: Set<string>; contacts: Map<string, Profile["contact"]>; applied: Set<string>; onLike: (p: Profile) => void; onContact: (p: Profile) => void; onApply: (t: Team) => void }) {
-  return <div><SectionTitle eyebrow={`${me.building}号楼广场`} title="从同楼同学开始认识" /><div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="segmented"><button onClick={() => setType("people")} className={type === "people" ? "active" : ""}>看看同学</button><button onClick={() => setType("teams")} className={type === "teams" ? "active" : ""}>看看小队</button></div><div className="flex gap-2"><label className="search-box"><Search className="size-4" /><input placeholder="按昵称、专业或兴趣轻轻找找" /></label><button className="icon-button border border-slate-200" aria-label="按生活节奏查看"><Clock3 className="size-4" /></button></div></div>{type === "people" ? <div className="grid gap-4 lg:grid-cols-2">{matches.length ? matches.map((r) => <ProfileCard key={r.profile.id} result={r} liked={liked.has(r.profile.id)} canContact={contacts.has(r.profile.id)} onLike={() => onLike(r.profile)} onContact={() => onContact(r.profile)} />) : <EmptyState text="这里暂时安静一些，等有同楼同学愿意公开介绍后，就会出现在这里" />}</div> : <div className="grid gap-4 lg:grid-cols-2">{teams.length ? teams.map((t) => <TeamCard key={t.id} team={t} applied={applied.has(t.id)} onApply={() => onApply(t)} />) : <EmptyState text="这里暂时还没有开放同行的小队；如果你愿意，也可以先发起一个" />}</div>}</div>;
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "schedule" | "interest">("all");
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleMatches = matches.filter((result) => {
+    const profile = result.profile;
+    const searchable = [profile.nickname, profile.major, profile.intro, ...profile.interests].join(" ").toLowerCase();
+    const queryMatches = !normalizedQuery || searchable.includes(normalizedQuery);
+    const filterMatches = filter === "all" || (filter === "schedule" ? result.schedule >= 78 : result.hobbies > 45);
+    return queryMatches && filterMatches;
+  });
+  const visibleTeams = teams.filter((team) => !normalizedQuery || [team.name, team.summary, ...team.interests].join(" ").toLowerCase().includes(normalizedQuery));
+  return <div><SectionTitle eyebrow={`${me.building}号楼 · 同楼社区`} title="按自己的节奏慢慢看" /><div className="mb-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950"><b>对不太喜欢主动社交的同学也友好：</b>只看介绍、不发起联系完全可以。系统不会催促你回复，也不会把你的浏览记录告诉其他人。</div><div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="segmented"><button onClick={() => setType("people")} className={type === "people" ? "active" : ""}>同楼同学 <span className="ml-1 text-xs opacity-60">{matches.length}</span></button><button onClick={() => setType("teams")} className={type === "teams" ? "active" : ""}>同行小队 <span className="ml-1 text-xs opacity-60">{teams.length}</span></button></div><label className="search-box"><Search className="size-4" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={type === "people" ? "搜索昵称、专业、兴趣或介绍" : "搜索小队名称、兴趣或介绍"} /></label></div>{type === "people" && <div className="mb-6 flex flex-wrap items-center gap-2"><span className="mr-1 text-xs text-slate-400">更快找到：</span>{([{ id: "all", label: "全部介绍" }, { id: "schedule", label: "生活节奏较接近" }, { id: "interest", label: "有共同兴趣" }] as const).map((option) => <button key={option.id} onClick={() => setFilter(option.id)} className={`filter-chip ${filter === option.id ? "filter-chip-active" : ""}`}>{option.id === "schedule" && <Clock3 className="size-3.5" />}{option.label}</button>)}<span className="ml-auto text-xs text-slate-400">找到 {visibleMatches.length} 位同学</span></div>}{type === "people" ? <div className="grid gap-4 lg:grid-cols-2">{visibleMatches.length ? visibleMatches.map((r) => <ProfileCard key={r.profile.id} result={r} liked={liked.has(r.profile.id)} canContact={contacts.has(r.profile.id)} onLike={() => onLike(r.profile)} onContact={() => onContact(r.profile)} />) : <EmptyState text="暂时没有符合这些条件的介绍，可以换个关键词，或者看看全部同学" />}</div> : <div className="grid gap-4 lg:grid-cols-2">{visibleTeams.length ? visibleTeams.map((t) => <TeamCard key={t.id} team={t} applied={applied.has(t.id)} onApply={() => onApply(t)} />) : <EmptyState text="暂时没有找到符合这些关键词的小队，可以换个词再看看" />}</div>}</div>;
 }
 
 function RecommendPage({ matches, liked, contacts, onLike, onContact }: { matches: MatchResult[]; liked: Set<string>; contacts: Map<string, Profile["contact"]>; onLike: (p: Profile) => void; onContact: (p: Profile) => void }) {
-  return <div><SectionTitle eyebrow="相处参考" title="也许可以从这些同学开始认识" /><div className="mb-6 rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-sky-900"><b>这些参考是怎么来的：</b>根据学校住宿安排，仅在同楼且住宿范围相同的同学之间展示。作息占 55%，兴趣占 40%，采光意向占 5%。分数只是一种认识彼此的起点，不代表对任何人的评价；系统只使用大家主动填写的内容，也不会交给第三方 AI。</div><div className="grid gap-5 lg:grid-cols-2">{matches.length ? matches.map((r) => <ProfileCard key={r.profile.id} result={r} liked={liked.has(r.profile.id)} canContact={contacts.has(r.profile.id)} onLike={() => onLike(r.profile)} onContact={() => onContact(r.profile)} />) : <EmptyState text="等你愿意发布简单介绍后，这里会慢慢出现适合进一步了解的同学" />}</div></div>;
+  return <div><SectionTitle eyebrow="相处线索" title="为你整理的同楼介绍" /><div className="mb-6 rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-sky-900"><b>这里不是人物排名。</b>系统只把同楼、住宿范围相同的同学放在一起，并优先整理生活节奏和兴趣爱好较接近的介绍。数字不会展示给任何人，结果也不代表谁更好或一定更适合；不想主动联系时，只把这里当作信息整理页也可以。</div><div className="grid gap-5 lg:grid-cols-2">{matches.length ? matches.map((r) => <ProfileCard key={r.profile.id} result={r} liked={liked.has(r.profile.id)} canContact={contacts.has(r.profile.id)} onLike={() => onLike(r.profile)} onContact={() => onContact(r.profile)} />) : <EmptyState text="等你愿意留下简单介绍后，这里会为你整理一些同楼信息" />}</div></div>;
 }
 
 function TeamsPage({ me, teams, applied, onApply, onCreate }: { me: Profile; teams: Team[]; applied: Set<string>; onApply: (t: Team) => void; onCreate: () => void }) {
-  return <div><div className="mb-6 flex items-end justify-between"><div><p className="text-xs font-bold tracking-[.2em] text-sky-700">{me.building}号楼同行空间</p><h1 className="mt-1 text-2xl font-black text-slate-900">我的小队与加入意向</h1></div><button onClick={onCreate} className="button button-primary"><UserPlus className="size-4" />发起一个小队</button></div><div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><b>关于提前组队的小提醒：</b>小队帮助大家约好选择同一宿舍号下的不同床位，但不会预留房间，也无法保证最终同住。把它当作多认识几位同学的开始就好。</div><section className="card mb-8 p-6"><div className="flex items-start gap-4"><span className="grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-400"><Users /></span><div className="flex-1"><h2 className="font-bold">给彼此一次确认的机会</h2><p className="mt-1 text-sm text-slate-500">你可以先向多个小队表达意愿。队长回应后，是否加入仍由你决定；加入一个小队后，系统会替你妥善结束其他意向。</p></div></div></section><SectionTitle eyebrow="期待新同学" title="正在开放同行的小队" /><div className="grid gap-4 lg:grid-cols-2">{teams.length ? teams.map((t) => <TeamCard key={t.id} team={t} applied={applied.has(t.id)} onApply={() => onApply(t)} />) : <EmptyState text="这里暂时还没有小队。如果你愿意，可以先为同楼同学留一盏灯" />}</div></div>;
+  return <div><div className="mb-6 flex items-end justify-between"><div><p className="text-xs font-bold tracking-[.2em] text-sky-700">{me.building}号楼同行空间</p><h1 className="mt-1 text-2xl font-black text-slate-900">我的小队与加入意向</h1></div><button onClick={onCreate} className="button button-primary"><UserPlus className="size-4" />发起一个小队</button></div><div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><b>关于提前组队的小提醒：</b>小队帮助大家约好选择同一宿舍号下的不同床位，但不会预留房间，也无法保证最终同住。可以先了解小队介绍，不需要立即申请或交流。</div><section className="card mb-8 p-6"><div className="flex items-start gap-4"><span className="grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-400"><Users /></span><div className="flex-1"><h2 className="font-bold">加入前可以再确认</h2><p className="mt-1 text-sm text-slate-500">你可以先向多个小队留下意向。队长回应后，是否加入仍由你决定；加入一个小队后，系统会替你妥善结束其他意向。</p></div></div></section><SectionTitle eyebrow="同楼小队" title="正在开放加入的小队" /><div className="grid gap-4 lg:grid-cols-2">{teams.length ? teams.map((t) => <TeamCard key={t.id} team={t} applied={applied.has(t.id)} onApply={() => onApply(t)} />) : <EmptyState text="这里暂时还没有小队。如果你愿意，可以发起一个，也可以之后再来看看" />}</div></div>;
 }
 
 function MePage({ me, notices, onProfile }: { me: Profile; notices: Array<{ id: string; title: string; body: string; created_at: string }>; onProfile: () => void }) {
@@ -341,7 +343,7 @@ function ProfileModal({ profile, required, onClose, onSave }: { profile: Profile
     } catch (cause) { setError(cause instanceof Error ? cause.message : "这次没有保存成功，请稍后再试。"); }
     finally { setSaving(false); }
   };
-  return <Modal onClose={onClose} wide><form onSubmit={submit}><div className="flex items-start justify-between"><div><p className="text-xs font-bold tracking-[.2em] text-sky-700">{required ? "第一次见面" : "你的介绍"}</p><h2 className="mt-1 text-2xl font-black">{required ? "先简单介绍一下自己" : "调整我的自我介绍"}</h2></div>{!required && <button type="button" className="icon-button" onClick={onClose}><X className="size-5" /></button>}</div><p className="mt-3 text-sm leading-6 text-slate-500">不用写得很详细，留下你愿意分享的部分就好。联系方式不会出现在公开介绍中，只有彼此都愿意进一步认识，或已经加入同一小队后才会显示。</p><div className="mt-6 grid gap-4 sm:grid-cols-2"><Field label="希望大家怎么称呼你（必填）"><input name="nickname" required maxLength={24} defaultValue={profile.nickname} /></Field><Field label="选一个喜欢的头像符号"><input name="avatar" maxLength={4} defaultValue={profile.avatar} /></Field><Field label="住宿安排中的性别信息"><select name="gender" defaultValue={profile.gender}><option value="female">女生</option><option value="male">男生</option></select></Field><Field label="学校分配的宿舍楼"><select name="building" defaultValue={profile.building}>{["13", "14", "15", "19", "23"].map((building) => <option key={building} value={building}>{building}号楼</option>)}</select></Field><Field label="专业大类"><select name="major" defaultValue={profile.major}>{majors.map((major) => <option key={major}>{major}</option>)}</select></Field><Field label="对房间采光的期待"><select name="orientation" defaultValue={profile.orientation}><option>阳面</option><option>阴面</option><option>都可以</option></select></Field><Field label="工作日通常几点准备休息（必填）"><select name="weekdaySleep" defaultValue={profile.weekdaySleep}>{sleepSlots.map((slot) => <option key={slot}>{slot}</option>)}</select></Field><Field label="周末通常几点准备休息（必填）"><select name="weekendSleep" defaultValue={profile.weekendSleep}>{sleepSlots.map((slot) => <option key={slot}>{slot}</option>)}</select></Field><Field label="工作日通常几点开始新一天（必填）"><select name="weekdayWake" defaultValue={profile.weekdayWake}>{wakeSlots.map((slot) => <option key={slot}>{slot}</option>)}</select></Field><Field label="周末通常几点开始新一天（必填）"><select name="weekendWake" defaultValue={profile.weekendWake}>{wakeSlots.map((slot) => <option key={slot}>{slot}</option>)}</select></Field><Field label="希望用哪种方式联系"><select name="contactType" defaultValue={profile.contact.type}><option>微信</option><option>QQ</option></select></Field><Field label="联系方式（仅彼此同意后显示）"><input name="contactValue" required maxLength={64} defaultValue={profile.contact.value} /></Field><div className="sm:col-span-2"><Field label="想分享的兴趣（可选，最多8个）"><input name="interests" defaultValue={profile.interests.join("、")} placeholder="例如：羽毛球、摄影、电影；写一两个也很好" /></Field></div><Field label="是否愿意出现在同楼广场"><select name="visible" defaultValue="true"><option value="true">愿意被同楼同学看见</option><option value="false">暂时只留给自己</option></select></Field><div className="sm:col-span-2"><Field label="想让未来室友了解的你（可选，最多200字）"><textarea name="intro" defaultValue={profile.intro} rows={3} maxLength={200} placeholder="可以是一句喜欢的事、对寝室生活的期待，或者暂时留白" /><small className="mt-1 block text-xs text-slate-400">这里适合分享兴趣和期待；真实姓名、手机号、微信号等信息请留在受保护的联系方式中。</small></Field></div></div><div className="mt-5 space-y-2">{["我已了解：这是第三方个人网站，并非学校官方系统", "我已了解：提前组队不会预留房间，也无法保证最终同住", "我愿意只在公开介绍中分享让自己感到安心的内容"].map((label, i) => <label key={label} className="flex items-start gap-3 text-xs leading-5 text-slate-600"><input type="checkbox" checked={checked[i]} onChange={() => setChecked(checked.map((v, j) => j === i ? !v : v))} className="mt-1" />{label}</label>)}</div>{error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{error}</p>}<button type="submit" disabled={!checked.every(Boolean) || saving} className="button button-primary mt-6 w-full disabled:opacity-40">{saving ? "正在妥善保存…" : "保存这份介绍"}</button></form></Modal>;
+  return <Modal onClose={onClose} wide><form onSubmit={submit}><div className="flex items-start justify-between"><div><p className="text-xs font-bold tracking-[.2em] text-sky-700">{required ? "第一次填写" : "你的介绍"}</p><h2 className="mt-1 text-2xl font-black">{required ? "填写一份简单介绍" : "调整我的自我介绍"}</h2></div>{!required && <button type="button" className="icon-button" onClick={onClose}><X className="size-5" /></button>}</div><p className="mt-3 text-sm leading-6 text-slate-500">不用写得很详细，留下你愿意分享的部分就好。联系方式不会出现在公开介绍中，只有彼此都愿意进一步认识，或已经加入同一小队后才会显示。</p><div className="mt-6 grid gap-4 sm:grid-cols-2"><Field label="希望大家怎么称呼你（必填）"><input name="nickname" required maxLength={24} defaultValue={profile.nickname} /></Field><Field label="选一个喜欢的头像符号"><input name="avatar" maxLength={4} defaultValue={profile.avatar} /></Field><Field label="住宿安排中的性别信息"><select name="gender" defaultValue={profile.gender}><option value="female">女生</option><option value="male">男生</option></select></Field><Field label="学校分配的宿舍楼"><select name="building" defaultValue={profile.building}>{["13", "14", "15", "19", "23"].map((building) => <option key={building} value={building}>{building}号楼</option>)}</select></Field><Field label="专业大类"><select name="major" defaultValue={profile.major}>{majors.map((major) => <option key={major}>{major}</option>)}</select></Field><Field label="对房间采光的期待"><select name="orientation" defaultValue={profile.orientation}><option>阳面</option><option>阴面</option><option>都可以</option></select></Field><Field label="工作日通常几点准备休息（必填）"><select name="weekdaySleep" defaultValue={profile.weekdaySleep}>{sleepSlots.map((slot) => <option key={slot}>{slot}</option>)}</select></Field><Field label="周末通常几点准备休息（必填）"><select name="weekendSleep" defaultValue={profile.weekendSleep}>{sleepSlots.map((slot) => <option key={slot}>{slot}</option>)}</select></Field><Field label="工作日通常几点开始新一天（必填）"><select name="weekdayWake" defaultValue={profile.weekdayWake}>{wakeSlots.map((slot) => <option key={slot}>{slot}</option>)}</select></Field><Field label="周末通常几点开始新一天（必填）"><select name="weekendWake" defaultValue={profile.weekendWake}>{wakeSlots.map((slot) => <option key={slot}>{slot}</option>)}</select></Field><Field label="希望用哪种方式联系"><select name="contactType" defaultValue={profile.contact.type}><option>微信</option><option>QQ</option></select></Field><Field label="联系方式（仅彼此同意后显示）"><input name="contactValue" required maxLength={64} defaultValue={profile.contact.value} /></Field><div className="sm:col-span-2"><Field label="兴趣爱好（可选，最多8个）"><input name="interests" defaultValue={profile.interests.join("、")} placeholder="例如：羽毛球、摄影、电影；写一两个也可以" /></Field></div><Field label="是否愿意出现在同楼页面"><select name="visible" defaultValue="true"><option value="true">愿意被同楼同学看见</option><option value="false">暂时只留给自己</option></select></Field><div className="sm:col-span-2"><Field label="其他想补充的内容（可选，最多200字）"><textarea name="intro" defaultValue={profile.intro} rows={3} maxLength={200} placeholder="可以写生活习惯、对寝室的期待，也可以留空" /><small className="mt-1 block text-xs text-slate-400">真实姓名、手机号、微信号等信息请留在受保护的联系方式中。</small></Field></div></div><div className="mt-5 space-y-2">{["我已了解：这是第三方个人网站，并非学校官方系统", "我已了解：提前组队不会预留房间，也无法保证最终同住", "我愿意只在公开介绍中分享让自己感到安心的内容"].map((label, i) => <label key={label} className="flex items-start gap-3 text-xs leading-5 text-slate-600"><input type="checkbox" checked={checked[i]} onChange={() => setChecked(checked.map((v, j) => j === i ? !v : v))} className="mt-1" />{label}</label>)}</div>{error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{error}</p>}<button type="submit" disabled={!checked.every(Boolean) || saving} className="button button-primary mt-6 w-full disabled:opacity-40">{saving ? "正在妥善保存…" : "保存这份介绍"}</button></form></Modal>;
 }
 
 function CreateTeamModal({ me, onClose, onSave }: { me: Profile; onClose: () => void; onSave: (input: { name: string; summary: string; orientation: Profile["orientation"] }) => Promise<void> }) {
