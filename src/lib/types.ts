@@ -3,14 +3,18 @@ export type Building = "undecided" | "13" | "14" | "15" | "19" | "23";
 export type SleepSlot = "22:30前" | "22:30–00:00" | "00:00–01:30" | "01:30后" | "不固定";
 export type WakeSlot = "07:00前" | "07:00–08:30" | "08:30–10:00" | "10:00后" | "不固定";
 export type Orientation = "阳面" | "阴面" | "都可以";
+export type SmokingStatus = "未选择" | "不吸烟" | "吸烟";
 
 export interface Profile {
   id: string;
   nickname: string;
   avatar: string;
+  isAdmin?: boolean;
+  realName?: string;
   gender: Gender;
   building: Building;
   major: string;
+  smoking: SmokingStatus;
   weekdaySleep: SleepSlot;
   weekendSleep: SleepSlot;
   weekdayWake: WakeSlot;
@@ -57,7 +61,7 @@ export interface LobbyPost {
   createdAt: string;
   commentCount: number;
   isMine: boolean;
-  author: Pick<Profile, "id" | "nickname" | "avatar" | "building" | "gender" | "major" | "weekdaySleep" | "interests" | "intro">;
+  author: Pick<Profile, "id" | "nickname" | "avatar" | "isAdmin" | "building" | "gender" | "major" | "smoking" | "weekdaySleep" | "interests" | "intro">;
 }
 
 export interface LobbyComment {
@@ -66,7 +70,7 @@ export interface LobbyComment {
   body: string;
   createdAt: string;
   isMine: boolean;
-  author: Pick<Profile, "id" | "nickname" | "avatar" | "building" | "gender" | "major">;
+  author: Pick<Profile, "id" | "nickname" | "avatar" | "isAdmin" | "building" | "gender" | "major">;
 }
 
 export type LobbyContactStatus = "pending" | "accepted" | "declined";
@@ -77,6 +81,24 @@ export interface LobbyContactLink {
   role: "requester" | "recipient";
   status: LobbyContactStatus;
   createdAt: string;
-  other: Pick<Profile, "id" | "nickname" | "avatar" | "gender">;
+  other: Pick<Profile, "id" | "nickname" | "avatar" | "isAdmin" | "gender">;
   contact?: Profile["contact"];
+  realName?: string;
+}
+
+export interface DirectConversation {
+  id: string;
+  other: Pick<Profile, "id" | "nickname" | "avatar" | "isAdmin" | "gender" | "major">;
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+export interface DirectMessage {
+  id: string;
+  conversationId: string;
+  body: string;
+  createdAt: string;
+  isMine: boolean;
+  sender: Pick<Profile, "id" | "nickname" | "avatar" | "isAdmin">;
 }

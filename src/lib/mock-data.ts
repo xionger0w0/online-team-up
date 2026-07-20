@@ -18,6 +18,7 @@ export const currentUser: Profile = {
   gender: "female",
   building: "13",
   major: "国际商务",
+  smoking: "不吸烟",
   weekdaySleep: "22:30–00:00",
   weekendSleep: "00:00–01:30",
   weekdayWake: "07:00–08:30",
@@ -31,11 +32,11 @@ export const currentUser: Profile = {
 };
 
 export const profiles: Profile[] = [
-  { id: "p1", nickname: "小满", avatar: "☁️", gender: "female", building: "13", major: "传播学", weekdaySleep: "22:30–00:00", weekendSleep: "00:00–01:30", weekdayWake: "07:00–08:30", weekendWake: "08:30–10:00", orientation: "阳面", interests: ["摄影", "电影", "羽毛球", "音乐"], intro: "INFJ，喜欢拍照和散步，希望寝室是能安心休息的小空间。", verified: false, teamStatus: "none", contact: { type: "微信", value: "xiaoman-demo" } },
-  { id: "p2", nickname: "北北", avatar: "🧸", gender: "female", building: "13", major: "国际商务", weekdaySleep: "00:00–01:30", weekendSleep: "00:00–01:30", weekdayWake: "07:00–08:30", weekendWake: "10:00后", orientation: "都可以", interests: ["旅行", "美食", "追剧", "桌游"], intro: "好相处，尊重彼此的空间，也很期待一起探索宁波。", verified: false, teamStatus: "open", contact: { type: "QQ", value: "20260001" } },
-  { id: "p3", nickname: "Lumi", avatar: "🌙", gender: "female", building: "13", major: "经济学", weekdaySleep: "22:30–00:00", weekendSleep: "22:30–00:00", weekdayWake: "07:00前", weekendWake: "07:00–08:30", orientation: "阴面", interests: ["阅读", "跑步", "音乐", "电影"], intro: "慢热但真诚，喜欢晨跑和读书。希望有事直接沟通。", verified: false, teamStatus: "none", contact: { type: "微信", value: "lumi-demo" } },
-  { id: "p4", nickname: "阿榆", avatar: "🎧", gender: "female", building: "13", major: "英语", weekdaySleep: "01:30后", weekendSleep: "01:30后", weekdayWake: "08:30–10:00", weekendWake: "10:00后", orientation: "阳面", interests: ["音乐", "游戏", "动漫", "美食"], intro: "喜欢音乐和游戏，作息偏晚，希望提前把彼此在意的事说清楚。", verified: false, teamStatus: "none", contact: { type: "QQ", value: "20260002" } },
-  { id: "p5", nickname: "屿川", avatar: "🏀", gender: "male", building: "15", major: "计算机科学与技术", weekdaySleep: "00:00–01:30", weekendSleep: "01:30后", weekdayWake: "07:00–08:30", weekendWake: "10:00后", orientation: "都可以", interests: ["篮球", "游戏", "编程"], intro: "欢迎一起打球。", verified: false, teamStatus: "none", contact: { type: "微信", value: "yuchuan-demo" } },
+  { id: "p1", nickname: "小满", avatar: "☁️", gender: "female", building: "13", major: "传播学", smoking: "不吸烟", weekdaySleep: "22:30–00:00", weekendSleep: "00:00–01:30", weekdayWake: "07:00–08:30", weekendWake: "08:30–10:00", orientation: "阳面", interests: ["摄影", "电影", "羽毛球", "音乐"], intro: "INFJ，喜欢拍照和散步，希望寝室是能安心休息的小空间。", verified: false, teamStatus: "none", contact: { type: "微信", value: "xiaoman-demo" } },
+  { id: "p2", nickname: "北北", avatar: "🧸", gender: "female", building: "13", major: "国际商务", smoking: "不吸烟", weekdaySleep: "00:00–01:30", weekendSleep: "00:00–01:30", weekdayWake: "07:00–08:30", weekendWake: "10:00后", orientation: "都可以", interests: ["旅行", "美食", "追剧", "桌游"], intro: "好相处，尊重彼此的空间，也很期待一起探索宁波。", verified: false, teamStatus: "open", contact: { type: "QQ", value: "20260001" } },
+  { id: "p3", nickname: "Lumi", avatar: "🌙", gender: "female", building: "13", major: "经济学", smoking: "不吸烟", weekdaySleep: "22:30–00:00", weekendSleep: "22:30–00:00", weekdayWake: "07:00前", weekendWake: "07:00–08:30", orientation: "阴面", interests: ["阅读", "跑步", "音乐", "电影"], intro: "慢热但真诚，喜欢晨跑和读书。希望有事直接沟通。", verified: false, teamStatus: "none", contact: { type: "微信", value: "lumi-demo" } },
+  { id: "p4", nickname: "阿榆", avatar: "🎧", gender: "female", building: "13", major: "英语", smoking: "吸烟", weekdaySleep: "01:30后", weekendSleep: "01:30后", weekdayWake: "08:30–10:00", weekendWake: "10:00后", orientation: "阳面", interests: ["音乐", "游戏", "动漫", "美食"], intro: "喜欢音乐和游戏，作息偏晚，希望提前把彼此在意的事说清楚。", verified: false, teamStatus: "none", contact: { type: "QQ", value: "20260002" } },
+  { id: "p5", nickname: "屿川", avatar: "🏀", gender: "male", building: "15", major: "计算机科学与技术", smoking: "不吸烟", weekdaySleep: "00:00–01:30", weekendSleep: "01:30后", weekdayWake: "07:00–08:30", weekendWake: "10:00后", orientation: "都可以", interests: ["篮球", "游戏", "编程"], intro: "欢迎一起打球。", verified: false, teamStatus: "none", contact: { type: "微信", value: "yuchuan-demo" } },
 ];
 
 export const teams: Team[] = [
@@ -46,7 +47,7 @@ export const teams: Team[] = [
 
 export const lobbyPosts: LobbyPost[] = [
   { id: "l1", kind: "chat", body: "大家好，兴趣爱好是摄影、电影和羽毛球。最近也在慢慢了解学校生活。", createdAt: "2026-07-20T04:18:00.000Z", commentCount: 0, isMine: false, author: profiles[0] },
-  { id: "l2", kind: "recruitment", body: "想认识作息大多在 00:00 前后、愿意彼此尊重空间的女生。平时喜欢摄影、旅行和电影，可以先留言慢慢聊。", createdAt: "2026-07-20T04:22:00.000Z", commentCount: 2, isMine: false, author: profiles[1] },
+  { id: "l2", kind: "recruitment", body: "想认识作息大多在 00:00 前后、愿意彼此尊重空间的女生。平时喜欢摄影、旅行和电影，可以先评论聊聊。", createdAt: "2026-07-20T04:22:00.000Z", commentCount: 2, isMine: false, author: profiles[1] },
   { id: "l3", kind: "chat", body: "有人也喜欢桌游或音乐吗？开学后可以一起参加社团活动。", createdAt: "2026-07-20T04:27:00.000Z", commentCount: 1, isMine: false, author: profiles[4] },
 ];
 

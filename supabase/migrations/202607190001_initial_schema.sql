@@ -10,6 +10,7 @@ create table public.profiles (
   gender text not null check (gender in ('female', 'male')),
   building text not null check (building in ('13','14','15','19','23')),
   major text not null,
+  smoking text not null default '未选择' check (smoking in ('未选择','不吸烟','吸烟')),
   weekday_sleep text not null,
   weekend_sleep text not null,
   weekday_wake text not null,

@@ -1,70 +1,29 @@
 # 线上组队
 
-面向宁波诺丁汉大学 2026 级中国大陆高考新生的第三方舍友匹配与选寝前组队网站。
+线上组队是一个由宁波诺丁汉大学在校生个人制作的第三方网站，面向希望提前认识舍友、交流生活习惯的新生。本网站并非学校官方选寝系统。
 
-> 本项目不是宁波诺丁汉大学官方选寝系统。提前组队不代表锁定房源，也不能保证入住同一宿舍，低层、阳面等热门位置可能更难抢到。
+## 网站目的
 
-## 已实现
+今年的新生楼栋信息尚未确定，网站目前主要提供公共聊天、找舍友招募、评论、私聊和进一步联系意愿功能。大家可以通过一般作息、专业、是否吸烟、兴趣爱好等公开资料慢慢了解彼此；楼栋信息明确后，网站也会继续更新。
 
-- 手机与电脑响应式界面
-- 13、14、15、19、23 号楼及性别/房型规则
-- 作息 55%＋兴趣 40%＋朝向 5% 的透明匹配算法
-- 个人广场、匹配推荐、队伍广场与匿名队伍摘要
-- 双方互相感兴趣后解锁微信/QQ
-- 多队申请、队长审批、用户最终确认的组队流程设计
-- 资料最小化、暂停展示、举报/拉黑及 30 天数据清理结构
-- 管理员后台（预留 GitHub OAuth）
-- Supabase 数据库、RLS 隐私策略和匿名账号迁移方案
-- 真实匿名账户、个人资料、联系方式、感兴趣与队伍数据读写
-- 建队、申请、队长审批、申请人二次确认的数据库事务接口
+提前认识或组队不代表锁定床位，也不能保证最终入住同一宿舍。请勿相信第三方代抢、“内部床位”、付费锁房或要求提前转账的说法，谨防诈骗。
 
-## 本地启动
+## 使用方法
 
-需要 Node.js 20+ 和 pnpm。
+1. 首次进入网站后，填写代号、专业、是否吸烟和一般作息等简单资料。
+2. 在公共聊天区正常聊天，或使用“编辑高亮招募”发布找舍友信息。
+3. 可以通过头像进入个人主页，查看对方主动公开的资料，并使用评论或私聊继续交流。
+4. 想进一步交换信息时，可发送“进一步联系意愿”。只有双方同意后，彼此填写的真实姓名、微信或 QQ 才会显示。
+5. 后续选寝与抢宿舍安排请通过双方认可的个人联系方式自行商量，本站不提供代抢或结果保证。
 
-```bash
-pnpm install
-pnpm dev
-```
+## 隐私保护
 
-打开 [http://localhost:3000](http://localhost:3000)。没有 `.env.local` 时自动使用演示数据，不需要数据库账号。
+网站不会在 GitHub 仓库中公开用户真实姓名、联系方式、私聊内容或其他账号资料。真实姓名及微信、QQ 等联系信息默认保密，仅在双方互相同意后向当事双方展示。请勿在公共聊天或招募内容中主动发布不希望公开的信息。
 
-## 接入 Supabase
+## 网站地址
 
-1. 创建 Supabase 免费项目。
-2. 在 SQL Editor 依次执行：
-   - `supabase/migrations/202607190001_initial_schema.sql`
-   - `supabase/migrations/202607200001_live_workflows.sql`
-3. 复制 `.env.example` 为 `.env.local`，填写项目 URL 和 anon key。
-4. 在 Supabase Auth 中开启 Anonymous Sign-Ins。
-5. 为管理员配置 GitHub OAuth，并填写 `ADMIN_GITHUB_LOGIN`。
+[https://xionger0w0.github.io/online-team-up/](https://xionger0w0.github.io/online-team-up/)
 
-密钥、真实联系方式和用户数据不得提交到 GitHub。
+## 问题联系
 
-## 部署到 GitHub Pages
-
-1. 在仓库 `Settings → Secrets and variables → Actions` 中添加：
-   - Secret `NEXT_PUBLIC_SUPABASE_URL`
-   - Secret `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-2. 可选：在 `Variables` 中添加 `NEXT_PUBLIC_DORM_SELECTION_DATE`。
-3. 在 `Settings → Pages` 中将 Source 设为 `GitHub Actions`。
-4. 打开 `Actions → Deploy GitHub Pages` 并运行工作流。
-5. 部署后测试资料、联系方式权限和组队流程。
-
-部署地址为 `https://xionger0w0.github.io/online-team-up/`。Supabase 的 URL 和 anon key 会在前端使用，但仍应通过 GitHub Secrets 管理；数据访问安全由 RLS 策略保证。
-
-## 需求与数据模型
-
-- 产品需求：[docs/PRODUCT_REQUIREMENTS.md](docs/PRODUCT_REQUIREMENTS.md)
-- 初始数据库：[supabase/migrations/202607190001_initial_schema.sql](supabase/migrations/202607190001_initial_schema.sql)
-- 真实业务流程：[supabase/migrations/202607200001_live_workflows.sql](supabase/migrations/202607200001_live_workflows.sql)
-- 匹配算法：[src/lib/matching.ts](src/lib/matching.ts)
-
-## 后续功能
-
-- `@nottingham.edu.cn` 邮箱验证码与 7 天绑定期
-- 微信开放平台头像/昵称同步（审核通过后启用）
-- 队长审批、成员移除与二次确认的完整前端管理界面
-- Cloudflare Turnstile 防滥用验证
-- 管理员 GitHub OAuth 权限中间件
-- 头像压缩、内容审核和账户迁移码
+如遇到使用问题、不文明内容、冒充骚扰或隐私安全问题，请联系：`scymg5@nottingham.edu.cn`。

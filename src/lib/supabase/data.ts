@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Building, Gender, LobbyComment, LobbyContactLink, LobbyContactStatus, LobbyPost, LobbyPostKind, Orientation, Profile, SleepSlot, Team, WakeSlot } from "@/lib/types";
+import type { Building, DirectConversation, DirectMessage, Gender, LobbyComment, LobbyContactLink, LobbyContactStatus, LobbyPost, LobbyPostKind, Orientation, Profile, SleepSlot, SmokingStatus, Team, WakeSlot } from "@/lib/types";
 
 type ContactType = "微信" | "QQ";
 
@@ -7,6 +7,9 @@ export interface ProfileInput {
   nickname: string;
   avatar: string;
   gender: Gender;
+  major: string;
+  smoking: Exclude<SmokingStatus, "未选择">;
+  realName: string;
   sleep: SleepSlot;
   interests: string[];
   intro: string;
@@ -20,6 +23,7 @@ interface ProfileRow {
   gender: Gender;
   building: Building;
   major: string;
+  smoking: SmokingStatus;
   weekday_sleep: SleepSlot;
   weekend_sleep: SleepSlot;
   weekday_wake: WakeSlot;
@@ -31,14 +35,17 @@ interface ProfileRow {
   visible: boolean;
 }
 
-function mapProfile(row: ProfileRow, contact?: Profile["contact"]): Profile {
+function mapProfile(row: ProfileRow, contact?: Profile["contact"], isAdmin = false, realName = ""): Profile {
   return {
     id: row.id,
     nickname: row.nickname,
     avatar: row.avatar_url || (row.gender === "female" ? "🌿" : "🌊"),
+    isAdmin,
+    realName,
     gender: row.gender,
     building: row.building,
     major: row.major,
+    smoking: row.smoking || "未选择",
     weekdaySleep: row.weekday_sleep,
     weekendSleep: row.weekend_sleep,
     weekdayWake: row.weekday_wake,
@@ -62,10 +69,22 @@ export async function getMyProfile(client: SupabaseClient, userId: string) {
     .eq("user_id", userId)
     .maybeSingle();
   if (contactError) throw contactError;
+  const { data: admin, error: adminError } = await client
+    .from("site_admins")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (adminError) throw adminError;
+  const { data: privateDetails, error: privateError } = await client
+    .from("profile_private_details")
+    .select("real_name")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (privateError) throw privateError;
   return mapProfile(data as ProfileRow, contact ? {
     type: contact.contact_type as ContactType,
     value: contact.contact_value,
-  } : undefined);
+  } : undefined, Boolean(admin), privateDetails?.real_name || "");
 }
 
 export async function listProfiles(client: SupabaseClient, userId: string) {
@@ -81,7 +100,8 @@ export async function saveProfile(client: SupabaseClient, userId: string, input:
     avatar_url: input.avatar,
     gender: input.gender,
     building: "undecided",
-    major: "暂不填写",
+    major: input.major,
+    smoking: input.smoking,
     weekday_sleep: input.sleep,
     weekend_sleep: input.sleep,
     weekday_wake: "不固定",
@@ -100,6 +120,12 @@ export async function saveProfile(client: SupabaseClient, userId: string, input:
     updated_at: new Date().toISOString(),
   });
   if (contactError) throw contactError;
+  const { error: privateError } = await client.from("profile_private_details").upsert({
+    user_id: userId,
+    real_name: input.realName.trim(),
+    updated_at: new Date().toISOString(),
+  });
+  if (privateError) throw privateError;
 }
 
 export async function uploadProfileAvatar(client: SupabaseClient, userId: string, file: File) {
@@ -229,6 +255,7 @@ interface LobbyAuthorRow {
   author_building: Building;
   author_gender: Gender;
   author_major: string;
+  author_is_admin: boolean;
 }
 
 interface LobbyPostRow extends LobbyAuthorRow {
@@ -239,6 +266,7 @@ interface LobbyPostRow extends LobbyAuthorRow {
   created_at: string;
   comment_count: number;
   author_sleep: SleepSlot;
+  author_smoking: SmokingStatus;
   author_interests: string[];
   author_intro: string;
 }
@@ -258,6 +286,7 @@ function mapLobbyAuthor(row: LobbyAuthorRow) {
     building: row.author_building,
     gender: row.author_gender,
     major: row.author_major,
+    isAdmin: row.author_is_admin,
   };
 }
 
@@ -274,6 +303,7 @@ export async function listLobbyPosts(client: SupabaseClient, ownUserId: string):
     isMine: row.author_id === ownUserId,
     author: {
       ...mapLobbyAuthor(row),
+      smoking: row.author_smoking,
       weekdaySleep: row.author_sleep,
       interests: row.author_interests || [],
       intro: row.author_intro || "",
@@ -335,6 +365,8 @@ interface LobbyContactLinkRow {
   other_nickname: string;
   other_avatar: string | null;
   other_gender: Gender;
+  other_is_admin: boolean;
+  other_real_name: string | null;
   other_contact_type: ContactType | null;
   other_contact_value: string | null;
 }
@@ -353,11 +385,91 @@ export async function listLobbyContactLinks(client: SupabaseClient): Promise<Lob
       nickname: row.other_nickname,
       avatar: row.other_avatar || (row.other_gender === "female" ? "🌿" : "🌊"),
       gender: row.other_gender,
+      isAdmin: row.other_is_admin,
     },
     contact: row.request_status === "accepted" && row.other_contact_type && row.other_contact_value
       ? { type: row.other_contact_type, value: row.other_contact_value }
       : undefined,
+    realName: row.request_status === "accepted" ? row.other_real_name || undefined : undefined,
   }));
+}
+
+interface DirectConversationRow {
+  conversation_id: string;
+  other_id: string;
+  other_nickname: string;
+  other_avatar: string | null;
+  other_gender: Gender;
+  other_major: string;
+  other_is_admin: boolean;
+  last_message: string | null;
+  last_message_at: string;
+  unread_count: number;
+}
+
+export async function listDirectConversations(client: SupabaseClient): Promise<DirectConversation[]> {
+  const { data, error } = await client.rpc("list_direct_conversations");
+  if (error) throw error;
+  return ((data || []) as DirectConversationRow[]).map((row) => ({
+    id: row.conversation_id,
+    other: {
+      id: row.other_id,
+      nickname: row.other_nickname,
+      avatar: row.other_avatar || (row.other_gender === "female" ? "🌿" : "🌊"),
+      gender: row.other_gender,
+      major: row.other_major,
+      isAdmin: row.other_is_admin,
+    },
+    lastMessage: row.last_message || "还没有消息",
+    lastMessageAt: row.last_message_at,
+    unreadCount: Number(row.unread_count),
+  }));
+}
+
+export async function openDirectConversation(client: SupabaseClient, otherUserId: string) {
+  const { data, error } = await client.rpc("open_direct_conversation", { other_user: otherUserId });
+  if (error) throw error;
+  return data as string;
+}
+
+interface DirectMessageRow {
+  message_id: string;
+  conversation_id: string;
+  message_body: string;
+  created_at: string;
+  sender_id: string;
+  sender_nickname: string;
+  sender_avatar: string | null;
+  sender_is_admin: boolean;
+  sender_is_mine: boolean;
+}
+
+export async function listDirectMessages(client: SupabaseClient, conversationId: string): Promise<DirectMessage[]> {
+  const { data, error } = await client.rpc("list_direct_messages", { target_conversation: conversationId });
+  if (error) throw error;
+  return ((data || []) as DirectMessageRow[]).map((row) => ({
+    id: row.message_id,
+    conversationId: row.conversation_id,
+    body: row.message_body,
+    createdAt: row.created_at,
+    isMine: row.sender_is_mine,
+    sender: {
+      id: row.sender_id,
+      nickname: row.sender_nickname,
+      avatar: row.sender_avatar || "🌿",
+      isAdmin: row.sender_is_admin,
+    },
+  }));
+}
+
+export async function sendDirectMessage(client: SupabaseClient, conversationId: string, body: string) {
+  const { error } = await client.rpc("send_direct_message", { target_conversation: conversationId, message_body: body.trim() });
+  if (error) throw error;
+}
+
+export async function markDirectMessagesRead(client: SupabaseClient, conversationId: string) {
+  const { error } = await client.rpc("mark_direct_messages_read", { target_conversation: conversationId });
+  if (error) throw error;
 }
 
 export async function requestLobbyContact(client: SupabaseClient, postId: string) {

@@ -1,0 +1,5 @@
+-- 管理员身份不写入公开仓库。
+-- 请由维护者在 Supabase SQL Editor 中使用目标账户 UUID 单独执行：
+-- insert into public.site_admins (user_id)
+-- values ('目标账户 UUID')
+-- on conflict (user_id) do nothing;
