@@ -101,6 +101,7 @@ export function PlatformApp() {
   const [showContact, setShowContact] = useState<Profile | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [needsProfile, setNeedsProfile] = useState(false);
   const [loading, setLoading] = useState(isSupabaseConfigured());
   const [connectionError, setConnectionError] = useState("");
@@ -241,12 +242,23 @@ export function PlatformApp() {
         </>}
       </main>
 
+      <footer className="border-t border-slate-200 bg-white px-4 pb-24 pt-6 text-xs text-slate-500 sm:px-6 md:pb-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p>线上组队由在校生个人制作，是独立的第三方个人网站，并非学校官方平台。</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button onClick={() => setShowDisclaimer(true)} className="font-semibold text-sky-800 hover:text-sky-950">免责声明与使用说明</button>
+            <a href="mailto:scymg5@nottingham.edu.cn" className="font-semibold text-sky-800 hover:text-sky-950">联系制作者</a>
+          </div>
+        </div>
+      </footer>
+
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">{navItems.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={`flex flex-col items-center gap-1 py-1 text-[10px] font-semibold ${tab === id ? "text-sky-800" : "text-slate-400"}`}><Icon className="size-5" />{label}</button>)}</nav>
 
       {toast && <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-sky-950 px-5 py-3 text-sm font-medium text-white shadow-xl md:bottom-8">{toast}</div>}
       {showContact && <ContactModal profile={showContact} onClose={() => setShowContact(null)} />}
       {showProfile && <ProfileModal profile={needsProfile ? { ...demoCurrentUser, nickname: "", intro: "", interests: [], contact: { type: "微信", value: "" } } : me} required={needsProfile} onClose={() => { if (!needsProfile) setShowProfile(false); }} onSave={handleSaveProfile} />}
       {showCreateTeam && <CreateTeamModal me={me} onClose={() => setShowCreateTeam(false)} onSave={handleCreateTeam} />}
+      {showDisclaimer && <DisclaimerModal onClose={() => setShowDisclaimer(false)} />}
       {menuOpen && <div className="fixed inset-0 z-50 bg-slate-950/25 md:hidden" onClick={() => setMenuOpen(false)}><div className="absolute right-4 top-19 w-48 rounded-2xl bg-white p-2 shadow-xl">{navItems.map(({ id, label }) => <button key={id} onClick={() => { setTab(id); setMenuOpen(false); }} className="block w-full rounded-xl px-4 py-3 text-left text-sm font-medium hover:bg-slate-50">{label}</button>)}</div></div>}
     </div>
   );
@@ -287,6 +299,18 @@ function Notice({ icon: Icon, title, text }: { icon: typeof Home; title: string;
 function PrivacyRow({ icon: Icon, label, value }: { icon: typeof Home; label: string; value: string }) { return <div className="flex items-center gap-3"><Icon className="size-4 text-sky-700" /><span className="text-slate-500">{label}</span><b className="ml-auto text-xs">{value}</b></div>; }
 
 function ContactModal({ profile, onClose }: { profile: Profile; onClose: () => void }) { return <Modal onClose={onClose}><div className="text-center"><Avatar profile={profile} size="lg" /><h2 className="mt-4 text-xl font-bold">你们都愿意再认识一点</h2><p className="mt-2 text-sm leading-6 text-slate-500">因为彼此都表达了意愿，现在可以交换联系方式。之后聊到什么程度、分享哪些信息，都可以按让自己舒服的节奏来。</p><div className="mt-6 rounded-2xl bg-sky-50 p-5"><span className="text-xs text-sky-700">{profile.contact.type}</span><strong className="mt-1 block text-lg text-sky-950">{profile.contact.value}</strong></div><button onClick={onClose} className="button button-primary mt-5 w-full">好，慢慢认识</button></div></Modal>; }
+
+function DisclaimerModal({ onClose }: { onClose: () => void }) {
+  const sections = [
+    { title: "网站性质", text: "“线上组队”由宁波诺丁汉大学在校生个人制作与维护，是独立的第三方个人网站，并非学校官方选寝系统，也不代表学校、住宿管理部门或任何学生组织。学校名称及楼栋信息仅用于帮助同学理解相关场景；如网站信息与学校正式通知不一致，请以学校官方信息为准。" },
+    { title: "服务说明", text: "网站希望为同学们提供一个自愿认识、交流和提前约伴的空间。相处参考、推荐结果与小队信息仅用于帮助开启交流，不构成对任何人的评价、承诺或保证，也不能预留宿舍、床位，无法保证成员最终入住同一宿舍。" },
+    { title: "信息与交往边界", text: "请只分享真实、合法且让自己感到安心的内容，不要在公开介绍中填写真实姓名、手机号、微信号、QQ号等敏感信息。联系方式仅会在彼此同意进一步认识，或依照网站规则加入同一小队后显示。是否继续联系、见面或分享更多信息，始终由你自己决定；如感到不适，可以随时停止交流。" },
+    { title: "内容与安全", text: "每位使用者应对自己发布的内容和交流行为负责。请勿发布骚扰、歧视、冒充、欺骗、违法或侵犯他人权益的内容。网站会在能力范围内维护社区秩序与资料安全，但互联网服务无法保证绝对稳定或绝对安全；请保持必要判断，并及时反馈可疑情况。" },
+    { title: "责任范围", text: "使用者基于个人介绍、推荐结果或沟通内容作出的选择，属于个人自主决定。在法律允许的范围内，制作者不对因学校安排变化、选寝结果、用户自行发布的不实内容、第三方行为或不可抗力造成的间接损失承担责任；但本说明不会排除法律规定不得排除的责任。" },
+    { title: "服务调整", text: "为保障网站运行和使用体验，功能、规则或开放时间可能根据实际情况调整，也可能因维护、安全风险或学校选寝安排而暂停。涉及个人资料的处理将遵循网站当时展示的隐私说明；本届选寝结束后，相关资料将依照网站公示的期限进行清理。" },
+  ];
+  return <Modal onClose={onClose} wide><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold tracking-[.2em] text-sky-700">使用前，彼此多一份安心</p><h2 className="mt-1 text-2xl font-black text-slate-900">免责声明与使用说明</h2></div><button type="button" className="icon-button shrink-0" onClick={onClose} aria-label="关闭免责声明"><X className="size-5" /></button></div><p className="mt-3 text-sm leading-6 text-slate-500">谢谢你愿意在这里认识新的同学。下面这些说明不是为了制造距离，而是希望每个人都能在清楚边界的前提下，更安心地交流。</p><div className="mt-6 space-y-5">{sections.map((section) => <section key={section.title}><h3 className="text-sm font-bold text-slate-800">{section.title}</h3><p className="mt-1 text-sm leading-7 text-slate-600">{section.text}</p></section>)}</div><div className="mt-6 rounded-2xl bg-sky-50 p-4 text-sm leading-6 text-sky-950"><b>有任何问题、建议或需要反馈的情况，欢迎联系：</b><a href="mailto:scymg5@nottingham.edu.cn" className="mt-1 block break-all font-semibold text-sky-800 underline decoration-sky-300 underline-offset-4">scymg5@nottingham.edu.cn</a></div><p className="mt-4 text-xs text-slate-400">最近更新：2026年7月20日</p><button onClick={onClose} className="button button-primary mt-5 w-full">我知道了</button></Modal>;
+}
 
 function ProfileModal({ profile, required, onClose, onSave }: { profile: Profile; required: boolean; onClose: () => void; onSave: (input: ProfileInput) => Promise<void> }) {
   const [checked, setChecked] = useState([false, false, false]);
