@@ -102,6 +102,21 @@ export async function saveProfile(client: SupabaseClient, userId: string, input:
   if (contactError) throw contactError;
 }
 
+export async function uploadProfileAvatar(client: SupabaseClient, userId: string, file: File) {
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowedTypes.includes(file.type)) throw new Error("请选择 JPG、PNG 或 WebP 图片");
+  if (file.size > 2 * 1024 * 1024) throw new Error("图片请控制在 2MB 以内");
+  const path = `${userId}/avatar`;
+  const { error } = await client.storage.from("avatars").upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+    cacheControl: "3600",
+  });
+  if (error) throw error;
+  const { data } = client.storage.from("avatars").getPublicUrl(path);
+  return `${data.publicUrl}?v=${Date.now()}`;
+}
+
 export async function listLikedProfileIds(client: SupabaseClient, userId: string) {
   const { data, error } = await client.from("reactions").select("target_id").eq("actor_id", userId);
   if (error) throw error;
