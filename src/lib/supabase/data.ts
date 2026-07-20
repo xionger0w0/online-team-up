@@ -170,7 +170,7 @@ export async function listTeams(client: SupabaseClient): Promise<Team[]> {
     gender: row.gender,
     members: Number(row.member_count),
     capacity: row.capacity,
-    schedule: "根据成员作息综合展示",
+    schedule: "成员生活节奏的综合参考",
     orientation: row.orientation,
     interests: [],
     summary: row.summary,

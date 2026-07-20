@@ -39,8 +39,7 @@ export const profiles: Profile[] = [
 ];
 
 export const teams: Team[] = [
-  { id: "t1", name: "13号楼·向阳小队", building: "13", gender: "female", members: 2, capacity: 4, schedule: "整体正常作息", orientation: "阳面", interests: ["摄影", "电影", "旅行"], summary: "我们整体作息适中，喜欢摄影、电影和旅行，希望找到尊重彼此空间、愿意坦诚沟通的新成员。", open: true },
-  { id: "t2", name: "早睡早起搭子", building: "13", gender: "female", members: 3, capacity: 4, schedule: "整体偏早", orientation: "都可以", interests: ["跑步", "阅读", "羽毛球"], summary: "小队偏爱规律作息，兴趣集中在运动与阅读。朝向随缘，更看重相处舒服。", open: true },
+  { id: "t1", name: "13号楼·向阳小队", building: "13", gender: "female", members: 2, capacity: 4, schedule: "休息时间相对稳定", orientation: "阳面", interests: ["摄影", "电影", "旅行"], summary: "我们喜欢摄影、电影和旅行，也希望在尊重彼此空间的同时，遇到愿意慢慢沟通的新同学。", open: true },
+  { id: "t2", name: "晨光同行小队", building: "13", gender: "female", members: 3, capacity: 4, schedule: "更喜欢早些休息", orientation: "都可以", interests: ["跑步", "阅读", "羽毛球"], summary: "我们比较喜欢早些休息，也爱运动和阅读。采光随缘，更在意每个人都能住得自在。", open: true },
   { id: "t3", name: "23号楼探索队", building: "23", gender: "female", members: 6, capacity: 8, schedule: "作息较灵活", orientation: "阳面", interests: ["美食", "桌游", "音乐"], summary: "我们喜欢轻松热闹的相处方式，也尊重每个人的独处时间，正在寻找两位新成员。", open: true },
 ];
-
