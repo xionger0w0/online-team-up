@@ -617,6 +617,10 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
       <p className="mt-5 text-xs font-bold tracking-[.18em] text-amber-700">欢迎在聊天区搞抽象，交朋友，网站粗糙，多多包容～</p>
       <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">欢迎来到线上组队网站～</h2>
       <p className="mt-3 text-sm leading-7 text-slate-600">这是面向 UNNC 新生的第三方找舍友公共聊天区。今年楼栋尚未确定，因此这里暂时只帮助大家认识可能合适的舍友。若新生楼栋确定，本网站也会立刻更新！</p>
+      <div className="mt-5 rounded-2xl border border-sky-100 bg-sky-50/80 p-4 text-sm leading-6 text-sky-950">
+        <p className="font-bold">组队前先了解</p>
+        <p className="mt-1">宁诺的新生宿舍楼栋通常由学校根据学院和专业统一分配，只有被分到同一楼栋的同学，才有机会提前组队并抢同一间宿舍。同专业同学被分到同一楼栋的概率更高，跨学院则几乎不可能同楼。即使没能和心仪的室友抢到同一间寝室，也不必灰心；入校后仍可按学校流程提出换宿申请，是否批准及具体安排以学校规定和实际床位情况为准。</p>
+      </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="welcome-step"><b>1 · 编辑个人资料</b><p>填写代号、专业、是否吸烟、一般作息和兴趣；真实姓名与联系方式默认受到保护。</p></div>
         <div className="welcome-step"><b>2 · 公共聊天</b><p>可以轻松聊聊、认识同学；点击头像还能预览并进入个人主页。</p></div>
