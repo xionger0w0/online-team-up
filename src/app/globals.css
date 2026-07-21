@@ -104,8 +104,12 @@ button { cursor: pointer; }
 .profile-author-button { border: 0; background: transparent; padding: 0; transition: transform .15s ease, box-shadow .15s ease; }
 .profile-author-button:hover { transform: translateY(-1px); box-shadow: 0 0 0 4px rgba(22,119,167,.08); }
 .profile-author-with-tip { position: relative; }
-.profile-author-with-tip::after { content: "查看个人主页\A" attr(data-tip); position: absolute; left: 50%; top: calc(100% + .5rem); z-index: 10; width: max-content; max-width: 13rem; translate: -50% -.2rem; pointer-events: none; white-space: pre-line; border-radius: .65rem; background: #17384a; padding: .45rem .65rem; color: white; font-size: .65rem; font-weight: 700; line-height: 1.1rem; text-align: center; opacity: 0; box-shadow: 0 6px 16px rgba(23,56,74,.18); transition: opacity .15s ease, translate .15s ease; }
-.profile-author-with-tip:hover::after, .profile-author-with-tip:focus-visible::after { translate: -50% 0; opacity: 1; }
+.profile-author-with-tip::after { content: "查看个人主页\A" attr(data-tip); position: absolute; left: 0; top: calc(100% + .5rem); z-index: 10; display: none; width: max-content; max-width: min(13rem, calc(100vw - 2rem)); translate: 0 -.2rem; pointer-events: none; white-space: pre-line; border-radius: .65rem; background: #17384a; padding: .45rem .65rem; color: white; font-size: .65rem; font-weight: 700; line-height: 1.1rem; text-align: left; opacity: 0; box-shadow: 0 6px 16px rgba(23,56,74,.18); transition: opacity .15s ease, translate .15s ease; }
+
+@media (hover: hover) and (pointer: fine) and (min-width: 641px) {
+  .profile-author-with-tip::after { display: block; }
+  .profile-author-with-tip:hover::after, .profile-author-with-tip:focus-visible::after { translate: 0 0; opacity: 1; }
+}
 .profile-name-button { border: 0; background: transparent; padding: 0; text-align: left; }
 .profile-name-button:hover { color: #1677a7; text-decoration: underline; text-underline-offset: .2rem; }
 .recruitment-contact-button { display: inline-flex; min-height: 2.25rem; align-items: center; gap: .4rem; border: 0; border-radius: .8rem; background: #9b651c; padding: .5rem .8rem; color: white; font-size: .75rem; font-weight: 800; box-shadow: 0 7px 16px rgba(139,89,24,.16); }
