@@ -5,8 +5,8 @@ const isGitHubPages = process.env.GITHUB_ACTIONS === "true";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
-  basePath: isGitHubPages ? "/online-team-up" : "",
-  assetPrefix: isGitHubPages ? "/online-team-up/" : undefined,
+  basePath: isGitHubPages ? "/UNNC-NewStudent-TeamUP" : "",
+  assetPrefix: isGitHubPages ? "/UNNC-NewStudent-TeamUP/" : undefined,
   images: {
     unoptimized: true,
   },

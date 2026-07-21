@@ -22,7 +22,7 @@
 
 ## 网站地址
 
-[https://xionger0w0.github.io/online-team-up/](https://xionger0w0.github.io/online-team-up/)
+[https://xionger0w0.github.io/UNNC-NewStudent-TeamUP/](https://xionger0w0.github.io/UNNC-NewStudent-TeamUP/)
 
 ## 问题联系
 
