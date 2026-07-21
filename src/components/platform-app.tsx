@@ -8,7 +8,8 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import unncpaLogo from "../../public/unncpa-logo.png";
 import { currentUser as demoCurrentUser, lobbyComments as demoLobbyComments, lobbyPosts as demoLobbyPosts, majors } from "@/lib/mock-data";
-import type { DirectConversation, DirectMessage, LobbyComment, LobbyContactLink, LobbyPost, LobbyPostKind, Profile } from "@/lib/types";
+import { calculateMatch } from "@/lib/matching";
+import type { DirectConversation, DirectMessage, LobbyComment, LobbyContactLink, LobbyPost, LobbyPostKind, MatchResult, Profile } from "@/lib/types";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   addLobbyComment, deleteLobbyComment, deleteLobbyPost, getMyProfile, listLobbyComments,
@@ -34,6 +35,22 @@ function Badge({ children, tone = "blue" }: { children: React.ReactNode; tone?: 
 
 function AdminBadge() {
   return <span className="admin-badge"><ShieldCheck className="size-3" />管理员</span>;
+}
+
+function MatchBadge({ result }: { result: MatchResult }) {
+  const tone = result.total >= 82 ? "border-emerald-200 bg-emerald-50 text-emerald-800" : result.total >= 65 ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 bg-slate-50 text-slate-600";
+  return <span title="系统根据双方公开资料自动生成，仅供参考" className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black ${tone}`}><Sparkles className="size-3" />匹配度 {result.total}%</span>;
+}
+
+function MatchPanel({ result }: { result: MatchResult }) {
+  return <section className="mt-5 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-amber-50/70 p-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div><p className="text-xs font-bold tracking-[.14em] text-emerald-800">资料匹配参考</p><p className="mt-1 max-w-md text-xs leading-5 text-slate-500">由系统根据双方公开资料自动生成，仅作为认识彼此的参考；页面不会展示具体计算方式。</p></div>
+      <div className="text-right"><b className="text-3xl font-black text-emerald-800">{result.total}%</b><p className="text-[10px] text-slate-400">综合匹配度</p></div>
+    </div>
+    {result.buildingHint && <p className={`mt-3 rounded-xl p-3 text-xs font-semibold ${result.buildingHint.startsWith("不同") ? "bg-rose-50 text-rose-800" : "bg-emerald-100/70 text-emerald-900"}`}>{result.buildingHint}</p>}
+    {result.caution && <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900">{result.caution}</p>}
+  </section>;
 }
 
 function maskEmail(email: string) {
@@ -432,6 +449,7 @@ export function PlatformApp() {
     {showWelcome && !showEmailAuth && <WelcomeModal onClose={() => setShowWelcome(false)} />}
     {showProfile && !showWelcome && !showEmailAuth && <ProfileModal profile={me} required={needsProfile} onClose={() => { if (!needsProfile) setShowProfile(false); }} onSave={saveMyProfile} onUploadAvatar={uploadAvatar} />}
     {profilePost && <PublicProfileModal
+      me={me}
       post={profilePost}
       link={links.find((link) => link.postId === profilePost.id && link.role === "requester")}
       onClose={() => setProfilePost(null)}
@@ -487,7 +505,7 @@ function LobbyPage({ me, posts, links, accountEmail, expandedPostId, comments, o
         {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
       </form>
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-xs"><button onClick={() => setFilter("all")} className={`filter-chip ${filter === "all" ? "filter-chip-active" : ""}`}>全部</button><button onClick={() => setFilter("chat")} className={`filter-chip ${filter === "chat" ? "filter-chip-active" : ""}`}>聊天</button><button onClick={() => setFilter("recruitment")} className={`filter-chip ${filter === "recruitment" ? "filter-chip-active" : ""}`}>只看招募</button><span className="ml-auto text-slate-400">{visible.length} 条</span></div>
-      <div className="lobby-feed">{visible.length ? visible.map((post) => <PostItem key={post.id} post={post} links={links} expanded={expandedPostId === post.id} comments={expandedPostId === post.id ? comments : []} onComments={() => onComments(post)} onSaveComment={onSaveComment} onDeleteComment={onDeleteComment} onDelete={() => onDelete(post.id)} onReport={() => onReport(post.id)} onContact={() => onContact(post)} onOwnRequests={() => onOwnRequests(post)} onOpenProfile={() => onOpenProfile(post)} />) : <p className="p-10 text-center text-sm text-slate-400">这里暂时没有符合条件的消息</p>}</div>
+      <div className="lobby-feed">{visible.length ? visible.map((post) => <PostItem key={post.id} me={me} post={post} links={links} expanded={expandedPostId === post.id} comments={expandedPostId === post.id ? comments : []} onComments={() => onComments(post)} onSaveComment={onSaveComment} onDeleteComment={onDeleteComment} onDelete={() => onDelete(post.id)} onReport={() => onReport(post.id)} onContact={() => onContact(post)} onOwnRequests={() => onOwnRequests(post)} onOpenProfile={() => onOpenProfile(post)} />) : <p className="p-10 text-center text-sm text-slate-400">这里暂时没有符合条件的消息</p>}</div>
     </section>
     <aside className="chat-side space-y-4">
       <div className="card p-5">
@@ -515,9 +533,10 @@ function LobbyPage({ me, posts, links, accountEmail, expandedPostId, comments, o
   </div>;
 }
 
-function PostItem({ post, links, expanded, comments, onComments, onSaveComment, onDeleteComment, onDelete, onReport, onContact, onOwnRequests, onOpenProfile }: { post: LobbyPost; links: LobbyContactLink[]; expanded: boolean; comments: LobbyComment[]; onComments: () => void; onSaveComment: (postId: string, body: string) => Promise<void>; onDeleteComment: (id: string) => void; onDelete: () => void; onReport: () => void; onContact: () => void; onOwnRequests: () => void; onOpenProfile: () => void }) {
+function PostItem({ me, post, links, expanded, comments, onComments, onSaveComment, onDeleteComment, onDelete, onReport, onContact, onOwnRequests, onOpenProfile }: { me: Profile; post: LobbyPost; links: LobbyContactLink[]; expanded: boolean; comments: LobbyComment[]; onComments: () => void; onSaveComment: (postId: string, body: string) => Promise<void>; onDeleteComment: (id: string) => void; onDelete: () => void; onReport: () => void; onContact: () => void; onOwnRequests: () => void; onOpenProfile: () => void }) {
   const link = links.find((item) => item.postId === post.id && item.role === "requester");
   const incoming = links.filter((item) => item.postId === post.id && item.role === "recipient" && item.status !== "declined");
+  const match = calculateMatch(me, post.author, post.body);
   const time = new Date(post.createdAt).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
   const contactLabel = link?.status === "accepted" ? "查看联系方式" : link?.status === "pending" ? "已发送，等待回应" : link?.status === "declined" ? "再次发送进一步联系意愿" : "发送进一步联系意愿";
   return <article className={`lobby-message ${post.kind === "recruitment" ? "lobby-message-recruitment" : ""}`}>
@@ -526,9 +545,11 @@ function PostItem({ post, links, expanded, comments, onComments, onSaveComment, 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-bold text-slate-900">{post.author.nickname}</span>
         {post.author.isAdmin && <AdminBadge />}
+        {match && <MatchBadge result={match} />}
         {post.isExample && <Badge tone="blue">示例</Badge>}
         <Badge tone="gray">{post.author.gender === "female" ? "女生" : "男生"}</Badge>
         {post.kind === "recruitment" && <Badge tone="yellow">高亮招募</Badge>}
+        {match?.buildingHint && <Badge tone={match.buildingHint.startsWith("不同") ? "yellow" : "green"}>{match.buildingHint.startsWith("不同") ? "不同楼栋" : "同楼栋"}</Badge>}
         <time className="text-[10px] text-slate-300">{time}</time>
       </div>
       {post.kind === "recruitment" && <div className="mt-2 flex flex-wrap gap-2"><Badge tone="green"><Clock3 className="mr-1 size-3" />{post.author.weekdaySleep}休息</Badge><Badge tone="gray">{post.author.major}</Badge><Badge tone="gray">{post.author.smoking}</Badge>{post.author.interests.slice(0, 4).map((item) => <Badge key={item} tone="gray">{item}</Badge>)}</div>}
@@ -624,7 +645,7 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
         <p className="mt-1">宁诺的新生宿舍楼栋通常由学校根据学院和专业统一分配，只有被分到同一楼栋的同学，才有机会提前组队并抢同一间宿舍。同专业同学被分到同一楼栋的概率更高，跨学院则几乎不可能同楼。即使没能和心仪的室友抢到同一间寝室，也不必灰心；入校后仍可按学校流程提出换宿申请，是否批准及具体安排以学校规定和实际床位情况为准。</p>
       </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <div className="welcome-step"><b>1 · 编辑个人资料</b><p>填写代号、专业、是否吸烟、一般作息和兴趣；真实姓名与联系方式默认受到保护。</p></div>
+        <div className="welcome-step"><b>1 · 编辑个人资料</b><p>填写代号、专业、是否吸烟、一般作息和兴趣；资料越完整，匹配度参考越准确。</p></div>
         <div className="welcome-step"><b>2 · 公共聊天</b><p>可以轻松聊聊、认识同学；点击头像还能预览并进入个人主页。</p></div>
         <div className="welcome-step"><b>3 · 广播招募</b><p>招募信息会在聊天区高亮显示，也会提供明显的进一步联系意愿按钮。</p></div>
         <div className="welcome-step"><b>4 · 评论与私聊</b><p>评论适合公开回复，私聊只对双方可见；联系方式更建议经过双方确认后查看。</p></div>
@@ -642,7 +663,8 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
   </Modal>;
 }
 
-function PublicProfileModal({ post, link, onClose, onContact, onMessage, onShowContact, onEdit, sameGender }: {
+function PublicProfileModal({ me, post, link, onClose, onContact, onMessage, onShowContact, onEdit, sameGender }: {
+  me: Profile;
   post: LobbyPost;
   link?: LobbyContactLink;
   onClose: () => void;
@@ -654,6 +676,7 @@ function PublicProfileModal({ post, link, onClose, onContact, onMessage, onShowC
 }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const match = calculateMatch(me, post.author, post.body);
   const actionLabel = link?.status === "pending" ? "已发送，等待对方回应" : link?.status === "declined" ? "再次发送进一步联系意愿" : "发送进一步联系意愿";
   const send = async () => {
     setSending(true); setError("");
@@ -671,6 +694,7 @@ function PublicProfileModal({ post, link, onClose, onContact, onMessage, onShowC
       </div>
       <button type="button" className="icon-button" onClick={onClose}><X className="size-5" /></button>
     </div>
+    {match && <MatchPanel result={match} />}
     <div className="profile-preview mt-6">
       <div><span>专业</span><b>{post.author.major}</b></div>
       <div><span>是否吸烟</span><b>{post.author.smoking}</b></div>

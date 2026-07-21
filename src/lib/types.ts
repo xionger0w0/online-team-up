@@ -31,8 +31,12 @@ export interface MatchResult {
   profile: Profile;
   total: number;
   schedule: number;
-  hobbies: number;
-  orientation: number;
+  interests: number;
+  smoking: number;
+  major: number;
+  sharedInterests: string[];
+  sameGender: boolean;
+  buildingHint?: string;
   reasons: string[];
   caution?: string;
 }
