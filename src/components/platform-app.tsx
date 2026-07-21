@@ -59,6 +59,38 @@ function maskEmail(email: string) {
   return `${name.slice(0, Math.min(2, name.length))}${name.length > 2 ? "***" : "*"}@${domain}`;
 }
 
+const AUTH_REQUEST_TIMEOUT_MS = 20_000;
+
+async function withAuthTimeout<T>(request: Promise<T>) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("AUTH_REQUEST_TIMEOUT")), AUTH_REQUEST_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([request, timeout]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+function readableAuthError(cause: unknown) {
+  const failure = cause && typeof cause === "object" ? cause as { code?: unknown; error_code?: unknown; message?: unknown; status?: unknown } : {};
+  const code = String(failure.code || failure.error_code || "").toLowerCase();
+  const status = Number(failure.status || 0);
+  const message = typeof failure.message === "string" ? failure.message.trim() : "";
+  const normalized = `${code} ${message}`.toLowerCase();
+  if (status === 429 || normalized.includes("rate") || normalized.includes("too many")) {
+    return "验证码发送过于频繁，或当前时段的发送额度已经用完。请至少等待 60 秒后再试；若仍失败，请等待每小时额度刷新。";
+  }
+  if (message === "AUTH_REQUEST_TIMEOUT" || normalized.includes("timeout") || normalized.includes("timed out")) {
+    return "邮件服务响应时间过长，请检查网络后稍后重试。请勿连续点击发送。";
+  }
+  if (!message || message === "{}") {
+    return "邮件服务暂时没有返回具体原因，请稍后再试；若刚刚已申请过验证码，请先等待 60 秒。";
+  }
+  return message;
+}
+
 export function PlatformApp() {
   const configured = isSupabaseConfigured();
   const emptyProfile: Profile = { ...demoCurrentUser, nickname: "", realName: "", contact: { type: "微信", value: "" }, building: "undecided" };
@@ -191,14 +223,14 @@ export function PlatformApp() {
     if (mode === "link") {
       const { data } = await supabase.auth.getSession();
       if (!data.session?.user.is_anonymous) throw new Error("当前账号已经绑定邮箱，请直接登录");
-      const { error } = await supabase.auth.updateUser({ email });
+      const { error } = await withAuthTimeout(supabase.auth.updateUser({ email }));
       if (error) throw error;
       return "email_change" as const;
     }
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await withAuthTimeout(supabase.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: true },
-    });
+    }));
     if (error) throw error;
     return "email" as const;
   };
@@ -588,8 +620,7 @@ function EmailAuthModal({ mode, onRequestCode, onVerifyCode }: {
       setVerificationType(type);
       setStep("code");
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "验证码暂时没有发送成功";
-      setError(message.includes("rate") ? "验证码请求有些频繁，请稍后再试" : message);
+      setError(readableAuthError(cause));
     } finally {
       setBusy(false);
     }
@@ -618,16 +649,17 @@ function EmailAuthModal({ mode, onRequestCode, onVerifyCode }: {
         <p className="mt-1">由于个人经费有限，网站每天最多发送 300 封注册验证邮件，每小时最多发送 25 封。如暂时没有收到，可稍后再试或等待额度刷新，感谢理解！</p>
         <p className="mt-2 text-xs leading-5 text-amber-800">PS：验证邮件有时会被邮箱归入垃圾邮件；若收件箱中没有，建议先到垃圾邮件中检查一下。请勿频繁申请发送验证码 qaq</p>
       </div>
-      {step === "email" ? <div className="mt-6">
-        <label className="field"><span>登录邮箱（仅自己可见）</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value.slice(0, 160))} placeholder="name@example.com" onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void requestCode(); } }} /></label>
-        <button type="button" onClick={() => void requestCode()} disabled={busy} className="button button-primary mt-4 w-full"><Mail className="size-4" />{busy ? "正在发送…" : "发送邮箱验证码"}</button>
-      </div> : <form className="mt-6" onSubmit={verify}>
+      {step === "email" ? <form className="mt-6" onSubmit={(event) => { event.preventDefault(); void requestCode(); }}>
+        <label className="field"><span>登录邮箱（仅自己可见）</span><input type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value.slice(0, 160))} placeholder="name@example.com" /></label>
+        <button type="submit" disabled={busy} className="button button-primary mt-4 w-full"><Mail className="size-4" />{busy ? "正在连接邮件服务…" : "发送邮箱验证码"}</button>
+        {busy && <p className="mt-2 text-center text-xs text-slate-500" aria-live="polite">正在申请验证码，请不要重复点击。</p>}
+      </form> : <form className="mt-6" onSubmit={verify}>
         <div className="rounded-2xl bg-sky-50 p-4 text-sm text-sky-900"><p>验证码已发送至</p><b className="mt-1 block break-all">{maskEmail(email)}</b></div>
         <label className="field mt-4"><span>邮件验证码</span><input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="请输入验证码" /></label>
         <button disabled={busy || code.length < 6} className="button button-primary mt-4 w-full"><Check className="size-4" />{busy ? "正在验证…" : mode === "link" ? "验证并保留当前账号" : "验证并登录"}</button>
         <div className="mt-4 flex items-center justify-between text-xs"><button type="button" onClick={() => { setStep("email"); setCode(""); setError(""); }} className="font-semibold text-sky-800">更换邮箱</button><button type="button" disabled={busy} onClick={() => void requestCode()} className="font-semibold text-sky-800 disabled:opacity-40">重新发送</button></div>
       </form>}
-      {error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700">{error}</p>}
+      {error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700" role="alert" aria-live="assertive">{error}</p>}
       <div className="mt-5 flex items-start gap-2 rounded-2xl bg-white/75 p-4 text-xs leading-5 text-slate-500"><LockKeyhole className="mt-0.5 size-4 shrink-0 text-sky-700" /><p>邮箱只用于登录和找回账号，不会出现在个人主页、聊天区或公开仓库中。</p></div>
     </div>
   </Modal>;
