@@ -590,6 +590,11 @@ function EmailAuthModal({ mode, onRequestCode, onVerifyCode }: {
       <p className="mt-5 text-xs font-bold tracking-[.18em] text-amber-700">个人邮箱和学校邮箱都支持</p>
       <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">{mode === "link" ? "绑定邮箱，保留当前账号" : "邮箱验证码登录"}</h2>
       <p className="mt-3 text-sm leading-7 text-slate-600">{mode === "link" ? "验证后会保留当前的个人资料、消息和管理员身份，以后换设备也能回到同一个账号。" : "无需设置密码。输入邮箱与邮件验证码，就能进入自己的账号。"}</p>
+      <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-sm leading-6 text-amber-950">
+        <p className="font-bold">发送额度说明</p>
+        <p className="mt-1">由于个人经费有限，网站每天最多发送 300 封注册验证邮件，每小时最多发送 25 封。如暂时没有收到，可稍后再试或等待额度刷新，感谢理解！</p>
+        <p className="mt-2 text-xs leading-5 text-amber-800">PS：验证邮件有时会被邮箱归入垃圾邮件；若收件箱中没有，请到垃圾邮件中检查一下 😭</p>
+      </div>
       {step === "email" ? <div className="mt-6">
         <label className="field"><span>登录邮箱（仅自己可见）</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value.slice(0, 160))} placeholder="name@example.com" onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void requestCode(); } }} /></label>
         <button type="button" onClick={() => void requestCode()} disabled={busy} className="button button-primary mt-4 w-full"><Mail className="size-4" />{busy ? "正在发送…" : "发送邮箱验证码"}</button>
