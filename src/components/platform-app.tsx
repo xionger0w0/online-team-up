@@ -4,7 +4,9 @@ import {
   AlertTriangle, BookOpen, Camera, Check, ChevronDown, Clock3, Flag, HeartHandshake, Info, LockKeyhole,
   Mail, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UserRoundPen, X,
 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import unncpaLogo from "../../public/unncpa-logo.png";
 import { currentUser as demoCurrentUser, lobbyComments as demoLobbyComments, lobbyPosts as demoLobbyPosts, majors } from "@/lib/mock-data";
 import type { DirectConversation, DirectMessage, LobbyComment, LobbyContactLink, LobbyPost, LobbyPostKind, Profile } from "@/lib/types";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -424,7 +426,7 @@ export function PlatformApp() {
       />}
     </main>
 
-    <footer className="border-t border-slate-200 bg-white px-4 py-6 text-xs text-slate-500"><div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p>在校生个人制作的第三方网站 · 有问题请联系 scymg5@nottingham.edu.cn</p><button onClick={() => setShowDisclaimer(true)} className="text-left font-semibold text-sky-800">使用说明与免责声明</button></div></footer>
+    <footer className="border-t border-slate-200 bg-white px-4 py-6 text-xs text-slate-500"><div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p>在校生个人制作的第三方网站 · 宁波诺丁汉大学心理协会大力支持 · 有问题请联系 scymg5@nottingham.edu.cn</p><button onClick={() => setShowDisclaimer(true)} className="text-left font-semibold text-sky-800">使用说明与免责声明</button></div></footer>
 
     {showEmailAuth && <EmailAuthModal mode={emailAuthMode} onRequestCode={requestEmailCode} onVerifyCode={verifyEmailCode} />}
     {showWelcome && !showEmailAuth && <WelcomeModal onClose={() => setShowWelcome(false)} />}
@@ -628,6 +630,13 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
         <div className="welcome-step"><b>4 · 评论与私聊</b><p>评论适合公开回复，私聊只对双方可见；联系方式更建议经过双方确认后查看。</p></div>
       </div>
       <div className="mt-5 flex items-start gap-2 rounded-2xl bg-white/70 p-4 text-xs leading-5 text-slate-500"><LockKeyhole className="mt-0.5 size-4 shrink-0 text-sky-700" /><p>真实姓名、微信或 QQ 默认不会公开。你也可以自行发布，但请留意隐私风险。不要相信第三方代抢，不要提供验证码或先行转账，谨防诈骗。只看不发言、晚一点回复，也完全没关系。</p></div>
+      <div className="mt-5 flex flex-col items-start gap-4 rounded-2xl border border-sky-100 bg-white/80 p-4 sm:flex-row sm:items-center">
+        <Image src={unncpaLogo} alt="宁波诺丁汉大学心理协会 UNNCPA Logo" className="h-auto w-44 max-w-full shrink-0" priority />
+        <div>
+          <p className="text-xs font-bold tracking-[.16em] text-amber-700">心协支持</p>
+          <p className="mt-1 text-sm font-semibold leading-6 text-sky-950">本网站由宁波诺丁汉大学心理协会大力支持，欢迎加入心理协会（UNNCPA）～</p>
+        </div>
+      </div>
       <button onClick={onClose} className="button button-primary mt-6 w-full">我知道了，去聊天区看看</button>
     </div>
   </Modal>;
