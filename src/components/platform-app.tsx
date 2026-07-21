@@ -595,7 +595,7 @@ function EmailAuthModal({ mode, onRequestCode, onVerifyCode }: {
       <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-sm leading-6 text-amber-950">
         <p className="font-bold">发送额度说明</p>
         <p className="mt-1">由于个人经费有限，网站每天最多发送 300 封注册验证邮件，每小时最多发送 25 封。如暂时没有收到，可稍后再试或等待额度刷新，感谢理解！</p>
-        <p className="mt-2 text-xs leading-5 text-amber-800">PS：验证邮件有时会被邮箱归入垃圾邮件；若收件箱中没有，请到垃圾邮件中检查一下 😭</p>
+        <p className="mt-2 text-xs leading-5 text-amber-800">PS：验证邮件有时会被邮箱归入垃圾邮件；若收件箱中没有，建议先到垃圾邮件中检查一下。请勿频繁申请发送验证码 qaq</p>
       </div>
       {step === "email" ? <div className="mt-6">
         <label className="field"><span>登录邮箱（仅自己可见）</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value.slice(0, 160))} placeholder="name@example.com" onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void requestCode(); } }} /></label>
